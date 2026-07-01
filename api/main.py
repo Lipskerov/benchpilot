@@ -27,6 +27,8 @@ from src.llm import reasoning, granite
 from src.protocols.generate import suggest_protocol
 from src.inventory.store import InventoryStore
 from src.inventory.match import check_protocol, order_list
+from src.team.store import TeamStore
+from src.team import digest
 
 app = FastAPI(title="BenchPilot API", version="2.0")
 WEB = ROOT / "web"
@@ -146,6 +148,133 @@ def inventory_update(item_id: str, item: InvItem):
 def inventory_delete(item_id: str):
     inv = InventoryStore(); inv.delete_item(item_id); inv.close()
     return {"ok": True}
+
+
+# ---------- team / projects / tasks (V3) ----------
+class TaskReq(BaseModel):
+    project_id: str
+    title: str
+    stage: str = "experiment"
+    target: str = ""
+    assignee: Optional[str] = None
+    status: str = "todo"
+    priority: str = "medium"
+    due: str = ""
+    reagents: List[str] = []
+    notes: str = ""
+
+
+class TaskPatch(BaseModel):
+    status: Optional[str] = None
+    assignee: Optional[str] = None
+    priority: Optional[str] = None
+    title: Optional[str] = None
+
+
+@app.get("/api/team")
+def team():
+    ts = TeamStore()
+    out = {"members": ts.workload(), "projects": ts.projects(),
+           "tasks": ts.tasks(), "duplicates": ts.duplicates()}
+    ts.close()
+    return out
+
+
+@app.get("/api/projects")
+def projects():
+    ts = TeamStore(); out = ts.projects(); ts.close()
+    return out
+
+
+class ProjectReq(BaseModel):
+    name: str
+    goal: str = ""
+    lead: Optional[str] = None
+
+
+@app.post("/api/projects")
+def project_create(p: ProjectReq):
+    ts = TeamStore(); pid = ts.add_project(p.name, p.goal, p.lead); ts.close()
+    return {"id": pid}
+
+
+class SpinupReq(BaseModel):
+    question: str
+    target: str = ""
+    experiment: str = ""
+    assay: str = "experiment"
+    reagents: List[str] = []
+    lead: Optional[str] = None
+    auto_assign: bool = True
+
+
+@app.post("/api/spinup")
+def spinup(req: SpinupReq):
+    """Turn a discovery into a staffed project: create project + stage tasks, auto-assign."""
+    ts = TeamStore()
+    name = req.target or (req.question[:60] + ("…" if len(req.question) > 60 else ""))
+    pid = ts.add_project(name=f"{name} — TNBC", goal=req.question, lead=req.lead)
+    tgt = req.target or "TNBC"
+    exp_short = (req.experiment or req.question)[:70]
+    plan = [
+        ("discover", f"Literature & trial scan: {tgt}", "done", "medium", 7, []),
+        ("design", f"Design experiment: {exp_short}", "todo", "high", 5, []),
+        ("protocol", f"Draft & source protocol: {tgt}", "todo", "high", 8, req.reagents),
+        ("experiment", f"Run {req.assay} assay: {tgt}", "todo", "high", 14, req.reagents),
+        ("analysis", f"Analyze results: {tgt}", "todo", "medium", 21, []),
+    ]
+    from datetime import date, timedelta
+    today = date.today()
+    for stage, title, status, prio, due_off, reagents in plan:
+        ts.add_task({"project_id": pid, "title": title, "stage": stage, "target": tgt,
+                     "status": status, "priority": prio,
+                     "due": (today + timedelta(days=due_off)).isoformat(), "reagents": reagents})
+    ts.close()
+    if req.auto_assign:
+        for s in digest.suggest_assignments(pid):
+            t2 = TeamStore(); t2.update_task(s["task_id"], {"assignee": s["suggest_id"]}); t2.close()
+    return {"project_id": pid}
+
+
+@app.get("/api/project/{pid}")
+def project(pid: str):
+    ts = TeamStore()
+    p = ts.project(pid)
+    if not p:
+        ts.close(); raise HTTPException(404, "not found")
+    out = {"project": p, "board": ts.board(pid), "pipeline": ts.pipeline(pid),
+           "members": ts.members()}
+    ts.close()
+    return out
+
+
+@app.post("/api/tasks")
+def task_add(t: TaskReq):
+    ts = TeamStore(); tid = ts.add_task(t.model_dump()); ts.close()
+    return {"id": tid}
+
+
+@app.patch("/api/tasks/{tid}")
+def task_patch(tid: str, patch: TaskPatch):
+    fields = {k: v for k, v in patch.model_dump().items() if v is not None}
+    ts = TeamStore(); ts.update_task(tid, fields); ts.close()
+    return {"ok": True}
+
+
+@app.delete("/api/tasks/{tid}")
+def task_delete(tid: str):
+    ts = TeamStore(); ts.delete_task(tid); ts.close()
+    return {"ok": True}
+
+
+@app.get("/api/standup")
+def standup(project: Optional[str] = None):
+    return digest.standup(project)
+
+
+@app.get("/api/suggest")
+def suggest(project: Optional[str] = None):
+    return digest.suggest_assignments(project)
 
 
 # ---------- static frontend ----------

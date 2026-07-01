@@ -277,3 +277,124 @@ $("#addBtn").onclick = () => {
     loadInventory();
   };
 };
+
+// ================= V3: Projects & Team =================
+const LOADERS = { projects: loadProjects, team: loadTeam };
+$$(".navitem").forEach(n => n.onclick = () => { show(n.dataset.view); (LOADERS[n.dataset.view] || (() => {}))(); });
+
+const STATUS_LABEL = { todo: "To do", in_progress: "In progress", blocked: "Blocked", done: "Done" };
+const avatar = (ini, name) => `<span class="avatar ${!name || name === "Unassigned" ? "none" : ""}" title="${esc(name || "Unassigned")}">${esc(ini || "—")}</span>`;
+
+// ---- Projects ----
+async function loadProjects() {
+  const projs = await api("/api/projects");
+  state.projects = projs;
+  $("#projectPicker").innerHTML = projs.map((p, i) => `
+    <div class="proj-card ${i === 0 ? "active" : ""}" data-pid="${esc(p.id)}">
+      <div class="pname">${esc(p.name)}</div>
+      <div class="pgoal">${esc(p.goal)}</div>
+      <div class="progress"><span style="width:${p.progress}%"></span></div>
+      <div class="pmeta"><span>${p.done_count}/${p.task_count} done</span><span>${esc(p.lead_name)}</span></div>
+    </div>`).join("");
+  $$("#projectPicker .proj-card").forEach(c => c.onclick = () => {
+    $$("#projectPicker .proj-card").forEach(x => x.classList.remove("active"));
+    c.classList.add("active"); openProject(c.dataset.pid);
+  });
+  if (projs.length) openProject(projs[0].id);
+}
+
+async function openProject(pid) {
+  const body = $("#projectBody");
+  body.innerHTML = `<div class="card"><span class="spinner"></span> Loading board and running stand-up…</div>`;
+  const [pr, su] = await Promise.all([api("/api/project/" + pid), api("/api/standup?project=" + pid)]);
+  body.innerHTML = renderStandup(su) + renderPipeline(pr.pipeline) + renderBoard(pr.board);
+}
+
+function renderStandup(s) {
+  const c = s.counts;
+  let flags = "";
+  if (s.blockers.length) flags += `<div class="flag"><b>Blockers:</b> ` +
+    s.blockers.map(b => `${esc(b.title)} — ${esc(b.reason)}`).join(" · ") + `</div>`;
+  if (s.duplicates.length) flags += `<div class="flag dup"><b>Duplicated effort:</b> ` +
+    s.duplicates.map(d => `${esc(d.target)} (${d.who.map(esc).join(", ")})`).join(" · ") + `</div>`;
+  if (s.unassigned.length) flags += `<div class="flag">${s.unassigned.length} unassigned task(s) — see Team &amp; tasks.</div>`;
+  return `<div class="standup"><h3>✦ AI stand-up</h3>
+    <div class="snarr">${esc(s.narrative)}</div>
+    <div class="schips"><span>✅ ${c.done} done</span><span>🔵 ${c.in_progress} in progress</span><span>⚪ ${c.todo} to do</span><span style="color:var(--miss)">⛔ ${c.blocked} blocked</span></div>
+    ${flags}</div>`;
+}
+
+function renderPipeline(pipe) {
+  return `<div class="pipeline">` + pipe.map((s, i) =>
+    `<div class="stage"><div class="sn">${esc(s.stage)}</div><div class="sc">${s.count}</div></div>` +
+    (i < pipe.length - 1 ? "" : "")).join("") + `</div>`;
+}
+
+function renderBoard(board) {
+  return `<div class="board">` + ["todo", "in_progress", "blocked", "done"].map(st => `
+    <div class="col"><h4>${STATUS_LABEL[st]} <span>${board[st].length}</span></h4>
+      ${board[st].map(t => taskCard(t)).join("")}
+    </div>`).join("") + `</div>`;
+}
+
+function taskCard(t) {
+  const rd = t.readiness || { ready: true, missing: [] };
+  const badge = t.reagents && t.reagents.length
+    ? (rd.ready ? `<span class="ready">reagents ok</span>` : `<span class="ready block">need ${esc(rd.missing.join(", "))}</span>`)
+    : "";
+  return `<div class="taskcard"><div class="tt">${esc(t.title)}</div>
+    <div class="trow"><span>${avatar(t.assignee_initials, t.assignee_name)}</span>
+    <span class="prio ${t.priority}">${t.priority}</span></div>
+    ${badge ? `<div class="trow" style="margin-top:7px">${badge}</div>` : ""}</div>`;
+}
+
+// ---- Team & tasks ----
+async function loadTeam() {
+  const data = await api("/api/team");
+  state.members = data.members;
+  const projName = {}; (state.projects || await api("/api/projects")).forEach(p => projName[p.id] = p.name);
+
+  $("#rosterBody").innerHTML = data.members.map(m => `
+    <div class="mcard">${avatar(m.initials, m.name)}
+      <div><div class="mname">${esc(m.name)}</div><div class="mrole">${esc(m.role)}</div>
+      <div class="mload">${m.active} active${m.blocked ? ` · <span class="b">${m.blocked} blocked</span>` : ""}</div></div>
+    </div>`).join("");
+
+  $("#dupBody").innerHTML = data.duplicates.length ? data.duplicates.map(d =>
+    `<div class="dup-warn">⚠️ <b>Duplicated effort</b> on <b>${esc(d.target)}</b>: ` +
+    d.tasks.map(t => `${esc(t.title)} (${esc(t.assignee_name)})`).join(" · ") + `</div>`).join("") : "";
+
+  const opts = a => data.members.map(m => `<option value="${m.id}" ${a === m.id ? "selected" : ""}>${esc(m.initials)} · ${esc(m.name)}</option>`).join("");
+  $("#taskBody").innerHTML = data.tasks.map(t => `
+    <tr>
+      <td class="mono-cell">${esc(t.id)}</td>
+      <td>${esc(t.title)}</td>
+      <td class="mono-cell">${esc(t.project_id)}</td>
+      <td>${esc(t.target)}</td>
+      <td><select class="mini" data-task="${t.id}" data-f="assignee"><option value="">— Unassigned</option>${opts(t.assignee)}</select></td>
+      <td><select class="mini" data-task="${t.id}" data-f="status">${["todo", "in_progress", "blocked", "done"].map(s => `<option value="${s}" ${t.status === s ? "selected" : ""}>${STATUS_LABEL[s]}</option>`).join("")}</select></td>
+      <td><span class="prio ${t.priority}">${t.priority}</span></td>
+      <td class="mono-cell">${esc(t.due || "")}</td>
+    </tr>`).join("");
+
+  $$('#taskBody select').forEach(sel => sel.onchange = async () => {
+    await api("/api/tasks/" + sel.dataset.task, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ [sel.dataset.f]: sel.value || null }) });
+    loadTeam();
+  });
+}
+
+$("#suggestBtn").onclick = async () => {
+  const s = await api("/api/suggest");
+  if (!s.length) { alert("No unassigned tasks — the board is fully staffed."); return; }
+  const rows = s.map(x => `<div class="oitem"><span>${esc(x.title)} <span class="mono-cell">→ ${esc(x.target)}</span></span>
+    <span><b>${esc(x.suggest)}</b> <span class="mono-cell">(${esc(x.why)})</span> &nbsp;
+    <button class="ghost" style="padding:3px 10px" data-t="${x.task_id}" data-m="${x.suggest_id}">Assign</button></span></div>`).join("");
+  $("#modalCard").innerHTML = `<h2>✦ Suggested assignments</h2><div class="order" style="background:#f6fbfb;border-color:#cfe6e6">${rows}</div>
+    <div class="modal-actions"><button class="ghost" id="mClose">Close</button></div>`;
+  $("#modal").classList.add("show");
+  $("#mClose").onclick = () => $("#modal").classList.remove("show");
+  $$("#modalCard [data-t]").forEach(b => b.onclick = async () => {
+    await api("/api/tasks/" + b.dataset.t, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ assignee: b.dataset.m }) });
+    b.textContent = "✓ Assigned"; b.disabled = true; loadTeam();
+  });
+};

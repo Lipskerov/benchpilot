@@ -171,3 +171,52 @@ tbody tr:hover{background:var(--line-soft)}
 .spinner{display:inline-block;width:15px;height:15px;border:2px solid var(--accent-soft);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .empty{color:var(--muted);padding:20px 0}
+
+/* ---- V3: projects & team ---- */
+.proj-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:22px}
+.proj-card{border:1px solid var(--line);border-radius:10px;padding:15px;background:var(--panel);cursor:pointer;transition:border-color .15s}
+.proj-card:hover{border-color:var(--accent)}
+.proj-card.active{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.proj-card .pname{font-weight:600;font-size:14px;margin-bottom:4px}
+.proj-card .pgoal{font-size:12.5px;color:var(--muted);line-height:1.4;margin-bottom:10px}
+.progress{height:6px;background:var(--line-soft);border-radius:99px;overflow:hidden}
+.progress>span{display:block;height:100%;background:var(--accent)}
+.proj-card .pmeta{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-soft);margin-top:7px;font-family:"IBM Plex Mono",monospace}
+
+.pipeline{display:flex;gap:8px;margin:6px 0 22px}
+.stage{flex:1;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--panel);text-align:center}
+.stage .sn{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.stage .sc{font-size:20px;font-weight:600;margin-top:2px}
+.stage .arrow{color:var(--line)}
+
+.standup{background:linear-gradient(180deg,#f6fbfb,#fff);border:1px solid #cfe6e6;border-radius:12px;padding:18px 20px;margin-bottom:20px}
+.standup h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--accent)}
+.standup .snarr{font-size:14.5px;line-height:1.6}
+.standup .schips{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap;font-size:12.5px;font-family:"IBM Plex Mono",monospace}
+.standup .flag{margin-top:12px;font-size:13px}
+.standup .flag b{color:var(--miss)}
+.standup .flag.dup b{color:var(--exp)}
+
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.col{background:var(--line-soft);border-radius:10px;padding:10px;min-height:120px}
+.col h4{margin:2px 4px 10px;font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);display:flex;justify-content:space-between}
+.taskcard{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 11px;margin-bottom:8px;box-shadow:var(--shadow)}
+.taskcard .tt{font-size:13px;line-height:1.35;margin-bottom:7px}
+.taskcard .trow{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.avatar{width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:10px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;border:1px solid #cfe6e6;font-family:"IBM Plex Mono",monospace}
+.avatar.none{background:var(--line-soft);color:var(--muted);border-color:var(--line)}
+.prio{font-size:10px;padding:1px 7px;border-radius:99px;font-weight:500}
+.prio.high{background:#fdeeeb;color:var(--miss)} .prio.medium{background:#fff4e5;color:var(--low)} .prio.low{background:var(--line-soft);color:var(--muted)}
+.ready{font-size:10.5px;padding:1px 7px;border-radius:99px;background:#eef8f1;color:var(--ok)}
+.ready.block{background:#fdeeeb;color:var(--miss)}
+
+.roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:8px}
+.mcard{border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:var(--panel);display:flex;gap:11px;align-items:center}
+.mcard .avatar{width:34px;height:34px;font-size:12px}
+.mcard .mname{font-weight:600;font-size:13.5px}
+.mcard .mrole{font-size:11.5px;color:var(--muted)}
+.mcard .mload{font-size:11.5px;color:var(--ink-soft);font-family:"IBM Plex Mono",monospace;margin-top:2px}
+.mcard .mload .b{color:var(--miss)}
+.dup-warn{background:#f8f5fd;border:1px solid #e3d8f5;border-radius:10px;padding:12px 15px;margin:12px 0;font-size:13px}
+.dup-warn b{color:var(--exp)}
+select.mini{font:inherit;font-size:12px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}

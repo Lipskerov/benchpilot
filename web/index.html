@@ -31,6 +31,10 @@
     <div class="navsep"></div>
     <div class="navgroup-label">Lab</div>
     <button class="navitem" data-view="inventory"><span class="step">◇</span> Reagent stock</button>
+    <div class="navsep"></div>
+    <div class="navgroup-label">Team</div>
+    <button class="navitem" data-view="projects"><span class="step">▤</span> Projects</button>
+    <button class="navitem" data-view="team"><span class="step">◍</span> Team &amp; tasks</button>
     <div class="sidefoot">Built with IBM Bob</div>
   </nav>
 
@@ -81,6 +85,37 @@
           </tr></thead>
           <tbody id="invBody"></tbody>
         </table>
+      </div>
+    </section>
+
+    <!-- PROJECTS -->
+    <section id="view-projects" class="view">
+      <div class="inv-head">
+        <h1>Projects &amp; research map</h1>
+        <button id="newProjBtn" class="ghost">+ New project</button>
+      </div>
+      <p class="lede">Track each project from question to result. The AI stand-up reads the live board — statuses, reagent-readiness, workload — and tells the team what to do next.</p>
+      <div id="projectPicker" class="proj-picker"></div>
+      <div id="projectBody"></div>
+    </section>
+
+    <!-- TEAM -->
+    <section id="view-team" class="view">
+      <div class="inv-head">
+        <h1>Team &amp; tasks</h1>
+        <div style="display:flex;gap:10px">
+          <button id="newTaskBtn" class="ghost">+ New task</button>
+          <button id="suggestBtn" class="primary">✦ Suggest assignments</button>
+        </div>
+      </div>
+      <p class="lede">Assign experiments to the lab, co-work across projects, and let the AI flag duplicated effort and reagent blockers.</p>
+      <div id="rosterBody" class="roster"></div>
+      <div id="dupBody"></div>
+      <div class="section-label">All tasks</div>
+      <div class="table-wrap">
+        <table id="taskTable"><thead><tr>
+          <th>ID</th><th>Task</th><th>Project</th><th>Target</th><th>Assignee</th><th>Status</th><th>Priority</th><th>Due</th>
+        </tr></thead><tbody id="taskBody"></tbody></table>
       </div>
     </section>
   </main>

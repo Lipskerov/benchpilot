@@ -1,6 +1,6 @@
-# BenchPilot V2
+# BenchPilot V3
 
-**Evidence-grounded AI co-worker for TNBC bench-to-decision workflow**
+**Evidence-grounded AI co-worker for TNBC bench-to-decision workflow + team collaboration**
 
 *Built with IBM Bob*
 
@@ -20,13 +20,14 @@ This manual workflow is time-consuming, error-prone, and disconnected. BenchPilo
 
 ## Solution
 
-**BenchPilot V2** is a FastAPI web application that guides researchers through the complete bench-to-decision workflow:
+**BenchPilot V3** is a FastAPI web application that guides researchers through the complete bench-to-decision workflow with team collaboration:
 
 1. **Ask a scientific question** → Search 785 PubMed papers + 1,468 clinical trials
 2. **Find real targets** → Grounded evidence synthesis with citations (PMIDs, NCT IDs)
 3. **Design an experiment** → AI-suggested experimental design based on evidence
 4. **Draft a protocol** → Detailed step-by-step protocol with methods and materials
 5. **Check inventory** → Reconcile protocol against live reagent inventory, flag what to order
+6. **Manage projects & team** → Kanban board, AI stand-up, task assignment, workload balancing
 
 The reasoning layer runs on **IBM Granite (watsonx)** with a grounded offline fallback using BM25 retrieval. Every recommendation is defensible, not guessed.
 
@@ -38,11 +39,13 @@ flowchart TD
         P[PubMed E-utilities<br/>785 papers, 2019-2026]
         A[ClinicalTrials.gov v2<br/>1,468 trials]
         I[Lab Inventory<br/>Reagents & consumables]
+        T[Team & Projects<br/>Members, tasks, workload]
     end
     P --> ETL[ETL & Normalization]
     A --> ETL
     ETL --> DB[(SQLite + BM25 Index)]
     I --> INV[(Inventory Store)]
+    T --> TEAM[(Team Store)]
     
     Q[Scientific Question] --> RET[BM25 Retrieval]
     DB --> RET
@@ -54,10 +57,15 @@ flowchart TD
     INV --> MATCH
     MATCH --> ORDER[Order List]
     
+    TEAM --> STANDUP[AI Stand-up<br/>Status + Reagent-readiness]
+    TEAM --> ASSIGN[Task Assignment<br/>Workload + Focus matching]
+    
     SYNTH --> UI[FastAPI + Web UI]
     EXP --> UI
     PROT --> UI
     ORDER --> UI
+    STANDUP --> UI
+    ASSIGN --> UI
 ```
 
 **Core Components:**
@@ -68,14 +76,16 @@ flowchart TD
 | **Knowledge Base** | SQLite + BM25 (rank_bm25) | Store structured data + fast retrieval |
 | **Reasoning** | IBM Granite via watsonx.ai (+ offline fallback) | Evidence synthesis, experiment design, protocol generation |
 | **Inventory** | SQLite + fuzzy matching | Track reagents, match protocol requirements |
+| **Team & Projects** | SQLite + AI digest | Member roster, task tracking, workload balancing |
 | **Backend** | FastAPI | REST API endpoints |
 | **Frontend** | Vanilla JS + HTML/CSS | Interactive workflow UI |
 
-**Key Innovation:** Unlike generic LLM chatbots, BenchPilot V2:
+**Key Innovation:** Unlike generic LLM chatbots, BenchPilot V3:
 - Grounds every answer in a real, curated TNBC corpus
 - Uses BM25 retrieval (not just embeddings) for precise evidence matching
 - Generates actionable protocols with inventory reconciliation
 - Provides transparent citations for every claim
+- Orchestrates team collaboration with reagent-aware task management
 
 ## Selected Theme
 
@@ -107,6 +117,28 @@ BenchPilot V2 demonstrates AI as a co-worker for scientific research — a domai
 - Real-time inventory checking
 
 ## How IBM Bob Was Used
+
+
+## Team & Collaboration (V3)
+
+✅ **Projects & Research Map**
+- Per-project Kanban board with stage pipeline (Planning → Active → Analysis → Complete)
+- AI "stand-up" that reads live task status, reagent-readiness, and workload
+- Cross-linked to reagent inventory for reagent-aware orchestration
+- Real-time project health monitoring
+
+✅ **Team & Task Management**
+- Member roster with workload tracking
+- Inline assign/status editing for tasks
+- Duplicated-effort detection across projects
+- AI-suggested task assignments matched to member focus and current load
+- Workload balancing and capacity planning
+
+✅ **Intelligent Orchestration**
+- Automatic detection of blocked tasks (missing reagents)
+- Priority recommendations based on evidence strength and team capacity
+- Collaboration insights (who should work together on what)
+
 
 IBM Bob was the primary development tool for BenchPilot V2, authoring the majority of the codebase through spec-driven development:
 
@@ -184,8 +216,9 @@ python etl/fetch_trials.py
 # Build database and BM25 index
 python etl/build_db.py
 
-# Generate inventory
+# Generate inventory and team data
 python etl/gen_inventory.py
+python etl/gen_team.py
 ```
 
 ## Example Workflow
