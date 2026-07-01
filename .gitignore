@@ -1,0 +1,19 @@
+# Secrets — never commit
+.env
+*.local
+# The GitHub MCP token is read from the environment, not from a committed file.
+# .bob/mcp.json is safe to commit because it only references ${GITHUB_PERSONAL_ACCESS_TOKEN}.
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Data / DB (rebuildable)
+benchpilot.db
+data/*.csv
+data/chroma/
+
+# TRACK data/snapshot/*.jsonl (committed for reproducibility)
+!data/snapshot/*.jsonl
