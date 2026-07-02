@@ -1,8 +1,29 @@
-# BenchPilot V4
+# BenchPilot
 
-**Evidence-grounded AI co-worker for TNBC bench-to-decision workflow + team collaboration**
+**An evidence-grounded AI co-worker for the cancer-biology lab — from a research question to a staffed, scheduled project, in minutes.**
 
-*Built with IBM Bob*
+*Built with IBM Bob · IBM AI Builders Challenge — Wildcard Track (Build Intelligent Systems for the Future of Work)*
+
+---
+
+## 🚀 Live demo & video
+
+- **🌐 Live app:** https://lipskerov.github.io/benchpilot/  *(runs fully in the browser — no server, no keys)*
+- **🎥 Demo video (≤3 min):** https://youtu.be/EWKyWWj4YKQ
+- **📦 Repository:** https://github.com/Lipskerov/benchpilot
+
+---
+
+## ✅ Challenge submission (Wildcard — Future of Work)
+
+| Requirement | Status |
+|---|---|
+| Working prototype built with **IBM Bob** (primary dev tool) | ✅ Live app + FastAPI backend, developed with Bob (see *How IBM Bob was used*) |
+| **AI as a core functional component** | ✅ Retrieval, evidence synthesis, hypothesis generation, experiment planning, and team orchestration are all AI-driven |
+| **IBM SkillsBuild** learning activity | ✅ Completed |
+| **Public GitHub repo** with README (problem · solution · AI architecture · theme · how Bob was used) | ✅ This document |
+| **Public demo/presentation video** (max 3 min) | ✅ 2:36 on YouTube |
+| Selected theme | ✅ Wildcard — *Build Intelligent Systems for the Future of Work* |
 
 ---
 
@@ -10,378 +31,198 @@
 
 Every "AI co-worker" targets the office inbox. **None target the science bench.**
 
-A triple-negative breast cancer (TNBC) research lab drowns in evidence — thousands of PubMed papers and hundreds of clinical trials — yet the highest-value decision, *"what should we study next, and hasn't it already been done?"*, stays slow and tacit. Beyond literature search, researchers must:
+A triple-negative breast cancer (TNBC) research lab drowns in evidence — thousands of PubMed papers and hundreds of clinical trials — yet the highest-value knowledge work stays slow, tacit, and disconnected:
 
-1. **Design experiments** based on evidence
-2. **Draft detailed protocols** with precise methods
-3. **Check reagent inventory** and order missing items
+1. **What should we study next** (and hasn't it already been done)?
+2. **Design the experiments** to answer it.
+3. **Draft the protocols** with precise methods and materials.
+4. **Check reagent stock** and order what's missing.
+5. **Coordinate the team** — who runs what, in what order, and what's blocked.
 
-This manual workflow is time-consuming, error-prone, and disconnected. BenchPilot V2 closes the loop.
+Today these steps live in separate tools and people's heads. BenchPilot turns them into one intelligent, outcome-driven system.
 
 ## Solution
 
-**BenchPilot V4** is a FastAPI web application that guides researchers through the complete bench-to-decision workflow with team collaboration:
+**BenchPilot** is an AI co-worker for a research lab that closes the full **bench-to-decision** loop and coordinates the team around it:
 
-1. **Ask a scientific question** → Search 785 PubMed papers + 1,468 clinical trials
-2. **Find real targets** → Grounded evidence synthesis with citations (PMIDs, NCT IDs)
-3. **Generate hypotheses** → Evidence-grounded hypotheses with confidence scores and plain-language summaries
-4. **Design an experiment** → Work-package experiment plans with timelines and detailed experimental design
-5. **Draft a protocol** → Detailed step-by-step protocol with methods, materials, and visual documentation
-6. **Check inventory** → Reconcile protocol against live reagent inventory, flag what to order
-7. **Manage projects & team** → Drag-drop Kanban board, AI stand-up, task assignment, workload balancing
+1. **Ask a scientific question** in plain language → grounded search over **785 PubMed papers + 1,468 clinical trials**.
+2. **Discover the real molecular targets** in the evidence, with cited papers and trials (PMIDs, NCT IDs).
+3. **Generate competing, testable hypotheses** — plain-language summaries, quantitative predictions, and falsification criteria.
+4. **Get a work-package experiment plan with a timeline** (sequential + parallel experiments, test groups, cell lines, reagents).
+5. **Draft a protocol** and **reconcile it against live reagent inventory** → flags exactly what to order.
+6. **Spin the plan into a staffed project** — auto-assign the team, drag-and-drop board, per-project WP roadmap.
+7. **AI stand-up + orchestration** — reads live status, reagent-readiness, and workload to say what to do next and who should do it.
 
-The reasoning layer runs on **IBM Granite (watsonx)** with a grounded offline fallback using BM25 retrieval. Every recommendation is defensible, not guessed.
+The reasoning layer runs on **IBM Granite (watsonx)** when configured, with a **grounded offline engine** (BM25 retrieval + templated reasoning) so it works with zero keys. Every recommendation is defensible, not guessed.
 
 ## AI Approach & Architecture
 
 ```mermaid
 flowchart TD
-
-
-## Live Demo
-
-**🌐 Live demo:** https://lipskerov.github.io/benchpilot/
-
-**🎥 Demo video:** https://youtu.be/EWKyWWj4YKQ
-
-The live demo is a fully static build (no server required) generated by `python web-build/build_static.py`. It runs the offline engine (BM25 retrieval + templates) entirely in the browser, demonstrating the complete workflow without requiring API keys or backend infrastructure.
-
-**Main page:** The app opens on a landing/search screen with the product name, value proposition, and search field. From there, the workflow flows through: **Discover** → **Design** → **Protocol** → **Projects** → **Team** → **Reagents**.
-
-
     subgraph Sources["Real public data (TNBC)"]
         P[PubMed E-utilities<br/>785 papers, 2019-2026]
         A[ClinicalTrials.gov v2<br/>1,468 trials]
-        I[Lab Inventory<br/>Reagents & consumables]
-        T[Team & Projects<br/>Members, tasks, workload]
+        I[Lab inventory<br/>96 reagents]
+        T[Team & projects<br/>members, tasks, workload]
     end
-    P --> ETL[ETL & Normalization]
+    P --> ETL[ETL & normalization]
     A --> ETL
-    ETL --> DB[(SQLite + BM25 Index)]
-    I --> INV[(Inventory Store)]
-    T --> TEAM[(Team Store)]
-    
-    Q[Scientific Question] --> RET[BM25 Retrieval]
+    ETL --> DB[(SQLite + BM25 index)]
+    I --> INV[(Inventory store)]
+    T --> TEAM[(Team store)]
+
+    Q[Scientific question] --> RET[BM25 retrieval]
     DB --> RET
-    RET --> GRAN[IBM Granite Reasoning<br/>watsonx.ai]
-    GRAN --> SYNTH[Evidence Synthesis]
-    SYNTH --> EXP[Experiment Design]
-    EXP --> PROT[Protocol Generation]
-    PROT --> MATCH[Inventory Matcher]
+    RET --> GRAN[IBM Granite reasoning<br/>watsonx.ai + offline fallback]
+    GRAN --> SYN[Evidence synthesis & targets]
+    SYN --> HYP[Hypotheses]
+    HYP --> PLAN[Work-package plan + timeline]
+    PLAN --> PROT[Protocol generation]
+    PROT --> MATCH[Inventory matcher]
     INV --> MATCH
-    MATCH --> ORDER[Order List]
-    
-    TEAM --> STANDUP[AI Stand-up<br/>Status + Reagent-readiness]
-    TEAM --> ASSIGN[Task Assignment<br/>Workload + Focus matching]
-    
-    SYNTH --> UI[FastAPI + Web UI]
-    EXP --> UI
-    PROT --> UI
+    MATCH --> ORDER[Order list]
+
+    PLAN --> PROJ[Project + tasks]
+    TEAM --> PROJ
+    PROJ --> STAND[AI stand-up<br/>status + reagent-readiness]
+    PROJ --> ASSIGN[Task assignment<br/>focus + workload]
+
+    SYN --> UI[Web UI / FastAPI]
+    HYP --> UI
+    PLAN --> UI
     ORDER --> UI
-    STANDUP --> UI
+    STAND --> UI
     ASSIGN --> UI
 ```
 
-**Core Components:**
+**Core components**
 
 | Module | Technology | Purpose |
-|--------|-----------|---------|
-| **Data Ingestion** | PubMed E-utilities, ClinicalTrials.gov API v2 | Fetch TNBC papers and trials |
-| **Knowledge Base** | SQLite + BM25 (rank_bm25) | Store structured data + fast retrieval |
-| **Reasoning** | IBM Granite via watsonx.ai (+ offline fallback) | Evidence synthesis, experiment design, protocol generation |
-| **Inventory** | SQLite + fuzzy matching | Track reagents, match protocol requirements |
-| **Team & Projects** | SQLite + AI digest | Member roster, task tracking, workload balancing |
-| **Backend** | FastAPI | REST API endpoints |
-| **Frontend** | Vanilla JS + HTML/CSS | Interactive workflow UI |
+|---|---|---|
+| Data ingestion | PubMed E-utilities · ClinicalTrials.gov API v2 | Real TNBC papers + trials |
+| Knowledge base | SQLite + **BM25** retrieval | Precise, explainable evidence matching |
+| Reasoning | **IBM Granite (watsonx.ai)** + grounded offline fallback | Synthesis, targets, hypotheses, experiment plans, protocols |
+| Inventory | SQLite + fuzzy matcher | Reconcile protocol materials vs live stock → order list |
+| Team & projects | SQLite + AI digest | Board, WP roadmap, AI stand-up, workload-aware assignment |
+| Backend | **FastAPI** | REST API |
+| Frontend | Vanilla JS + HTML/CSS | Landing/search + workflow UI |
+| Static build | `web-build/build_static.py` | Ships the whole app + data as static files for GitHub Pages (client-side engine) |
 
-**Key Innovation:** Unlike generic LLM chatbots, BenchPilot V4:
-- Grounds every answer in a real, curated TNBC corpus
-- Uses BM25 retrieval (not just embeddings) for precise evidence matching
-- Generates evidence-grounded hypotheses with confidence scores
-- Creates work-package experiment plans with timelines
-- Generates actionable protocols with visual documentation
-- Provides transparent citations for every claim
-- Orchestrates team collaboration with drag-drop Kanban and reagent-aware task management
+**Why it's more than a chatbot:** grounded in a real curated corpus; BM25 (not just embeddings) for precise, explainable retrieval; hypotheses with predictions *and* falsification; quantitative experiment plans with dependencies; and reagent-aware team orchestration — with transparent citations throughout.
 
 ## Selected Theme
 
-**Wildcard Track: "Build Intelligent Systems for the Future of Work"**
+**Wildcard Track — "Build Intelligent Systems for the Future of Work."**
 
-BenchPilot V2 demonstrates AI as a co-worker for scientific research — a domain where decision support must be evidence-based, transparent, and actionable. By automating the bench-to-decision workflow (literature → design → protocol → inventory), it accelerates the research cycle and helps scientists make better-informed decisions about what to study next.
+BenchPilot is an **AI co-worker + project-planning assistant + decision-intelligence + workflow-orchestration** system for scientific research:
 
-## Current Features (V2)
+- **Reduces repetitive work** — automates literature/trial scanning, experiment planning, protocol drafting, and reagent checks.
+- **Improves decision-making** — evidence-grounded hypotheses, gap-aware suggestions, and an AI stand-up that surfaces blockers and priorities.
+- **Helps teams achieve outcomes faster** — turns a question into a staffed, scheduled project with a timeline and a live board.
 
-✅ **Real TNBC Knowledge Base**
-- 785 PubMed papers (2019-2026)
-- 1,468 clinical trials from ClinicalTrials.gov
-- BM25 retrieval for fast, precise evidence matching
-
-✅ **Complete Workflow**
-- Scientific question → Evidence synthesis with citations
-- Experiment design suggestions based on evidence
-- Detailed protocol generation with methods and materials
-- Live reagent inventory with order list
-
-✅ **IBM Granite Integration**
-- Reasoning via watsonx.ai (when configured)
-- Offline fallback mode for demo (no API keys required)
-- Grounded synthesis with mandatory citations
-
-✅ **FastAPI Backend + Web UI**
-- REST API endpoints for all workflow steps
-- Clean, responsive web interface
-- Real-time inventory checking
+It transforms research from disconnected tasks into an intelligent, outcome-driven system.
 
 ## How IBM Bob Was Used
 
+**IBM Bob was the primary development tool for BenchPilot** — used to plan, build, test, and version-control the project through **spec-driven development**.
 
-## Team & Collaboration (V3)
+**Workflow**
+1. **Spec first.** Wrote `PROJECT-MAP.md`, `SPEC.md`, and `INVENTORY-SPEC.md` as the source of truth — precise feature specs with acceptance criteria — so Bob had unambiguous requirements.
+2. **Ask mode** to explore the codebase and scope each phase.
+3. **Plan mode** to generate an implementation plan per phase (ETL → retrieval → reasoning → inventory → team → UI).
+4. **Build mode** to implement each feature against the spec, one at a time.
+5. **GitHub integration** — Bob's GitHub MCP (`.bob/mcp.json`) was used so **every commit and push was done through Bob**, giving a Bob-authored version history.
+6. **Review** with Bob before submission to catch gaps.
 
-✅ **Projects & Research Map**
-- Per-project Kanban board with stage pipeline (Planning → Active → Analysis → Complete)
-- AI "stand-up" that reads live task status, reagent-readiness, and workload
-- Cross-linked to reagent inventory for reagent-aware orchestration
-- Real-time project health monitoring
+**Bob-authored commit trail** (see `git log`):
+- `chore: project scaffolding and specs`
+- `feat(etl): PubMed + ClinicalTrials.gov TNBC fetchers`
+- `feat(db): normalize + build BM25 index`
+- `feat(app): grounded TNBC Q&A with citations`
+- `feat(inventory): protocols + live-inventory check with order list`
+- `feat: BenchPilot V2 — FastAPI app, grounded retrieval, Granite reasoning, protocol drafting, inventory order flagging`
+- `feat: BenchPilot V3 — team collaboration (board, AI stand-up, task assignment, reagent-aware orchestration)`
+- `feat: BenchPilot V4 — hypotheses + experiment plan/timeline, project editor + drag-drop board, WP roadmap, experiment design + protocol photos`
+- `feat: landing/search main page + static GitHub Pages build`
 
-✅ **Team & Task Management**
-- Member roster with workload tracking
-- Inline assign/status editing for tasks
-- Duplicated-effort detection across projects
-- AI-suggested task assignments matched to member focus and current load
-- Workload balancing and capacity planning
-- 🔄 **Future:** IBM Bob API integration for intelligent task assignment (placeholder in src/team/digest.py)
+**Credit-conscious approach:** a strong spec up front minimized re-prompts; one Plan-mode call per phase; and manual testing/config between Bob sessions conserved Bobcoins for the high-leverage generative work (ETL, reasoning engine, UI).
 
-✅ **Intelligent Orchestration**
-- Automatic detection of blocked tasks (missing reagents)
-- Priority recommendations based on evidence strength and team capacity
-- Collaboration insights (who should work together on what)
+## Features
 
+**Bench-to-decision workflow**
+- Landing/search main page → grounded evidence synthesis with citations
+- Target extraction ranked by real evidence
+- Competing hypotheses (plain-language, prediction, falsification, confidence)
+- Work-package experiment plan with a **Gantt timeline** (parallel + sequential)
+- Protocol drafting reconciled against **live reagent inventory** → order list (CSV)
 
-IBM Bob was the primary development tool for BenchPilot V2, authoring the majority of the codebase through spec-driven development:
+**Team & orchestration**
+- Projects with drag-and-drop **Kanban board** and a per-project **WP roadmap**
+- **AI stand-up** (status, reagent-readiness, blockers, priorities)
+- Workload-aware **task assignment** + project editor (assign the team, adjust tasks)
+- Experimental design on tasks (test groups, cell lines, replicates) + **protocol photos** (Western blot, IF microscopy, plate maps)
 
-## Enhanced Features (V4)
-
-✅ **Evidence-Grounded Hypotheses & Experiment Plans**
-- Rich hypotheses with evidence citations and confidence scores
-- Work-package experiment plans with timelines and milestones
-- Judge-friendly plain-language summaries for non-experts
-- 🔄 **Future:** IBM Bob API integration for hypothesis generation (placeholder in src/llm/reasoning.py)
-
-✅ **Project Editor & Drag-Drop Board**
-- Visual project editor with team assignment
-- Drag-and-drop Kanban board for task management
-- Per-project work-package roadmap with dependencies
-
-✅ **Experimental Design & Protocol Photos**
-- Detailed experimental design (test groups, cell lines, replicates)
-- Protocol photos and diagrams (Western blots, immunofluorescence, plate maps)
-- Visual documentation for reproducibility
-
-✅ **Demo Video Production**
-- Playwright-based demo recorder (demo/.rec/)
-- Voice-over script with narration (demo/NARRATION.md)
-- Automated video generation with ffmpeg
-- Demo videos excluded from repo (too large, produced locally)
-
-
-
-**Bob-authored commits:**
-- ✅ `chore: project scaffolding and specs` - Initial repo setup with PROJECT-MAP.md and SPEC.md
-- ✅ `feat(etl): PubMed + ClinicalTrials.gov TNBC fetchers` - Data ingestion scripts with rate limiting
-- ✅ `feat(data): add TNBC corpus snapshot` - Real dataset (785 papers, 1468 trials)
-- ✅ `feat(db): normalize + vector index with mock-embeddings fallback` - Database build
-- ✅ `feat(app): grounded TNBC Q&A with citations (mock-LLM)` - Initial Streamlit UI (V1)
-- ✅ `feat(inventory): protocols + live-inventory check with order list` - Inventory system
-- ✅ `feat: BenchPilot V2 — FastAPI app, grounded BM25 retrieval, Granite reasoning, experiment design + protocol drafting, live reagent inventory with order flagging` - Complete V2 rewrite
-- ✅ `feat: BenchPilot V3 — team collaboration layer (project board, AI stand-up, task assignment, reagent-aware orchestration)` - Team management features
-- ✅ `feat: BenchPilot V4 — hypotheses + experiment plan/timeline, project editor + drag-drop board, WP roadmap, experiment design + protocol photos, judge-friendly demo; demo recorder (video excluded)` - Enhanced features and demo production
-
-**Development approach:**
-1. Wrote detailed SPEC.md with acceptance criteria for each feature
-2. Used Bob in code mode to implement features one at a time
-3. Bob generated production-ready code following the spec
-4. Manual testing and refinement between Bob sessions
-5. All Bob-generated code committed with descriptive messages
-
-**Bobcoin budget:** ~15 credits spent on high-leverage tasks (ETL, database, reasoning, UI), conserving credits by doing manual testing and configuration.
+**Reagent inventory**
+- Searchable catalogue (chemical / biological / plastic) with concentration, purity, MW, stock
+- Add/edit/delete items; low-stock and expiry flags
 
 ## Quick Start
 
-### Prerequisites
-- Python 3.11+
-- pip
-
-### Installation
-
 ```bash
-# Clone the repository
 git clone https://github.com/Lipskerov/benchpilot.git
 cd benchpilot
-
-# Install dependencies
 pip install -r requirements.txt
-```
 
-### Configuration (Optional - for real LLM)
-
-To use IBM Granite via watsonx.ai instead of the offline fallback:
-
-```bash
-# Copy environment template
-cp .env.example .env
-
-# Edit .env and fill in:
-# WATSONX_API_KEY=your_api_key_here
-# WATSONX_PROJECT_ID=your_project_id_here
-# WATSONX_URL=https://us-south.ml.cloud.ibm.com
-# GRANITE_MODEL_ID=ibm/granite-3-8b-instruct
-```
-
-### Run the App
-
-```bash
-# Start the FastAPI server
+# Run the app (offline engine — no keys needed)
 python -m uvicorn api.main:app --reload
+# open http://127.0.0.1:8000
+```
 
+**Optional — real IBM Granite (watsonx):** `cp .env.example .env` and fill `WATSONX_API_KEY`, `WATSONX_PROJECT_ID`, `WATSONX_URL`, `GRANITE_MODEL_ID`. The app auto-uses the offline engine if keys are absent.
 
-
-### Demo Video Production (Optional)
-
-The demo video is produced locally using Playwright automation and is not stored in the repository due to file size:
-
+**Rebuild the data (optional):**
 ```bash
-# Install demo recorder dependencies
-cd demo/.rec
-npm install
-
-# Record demo video
-./make.sh
-
-# Add voice-over (requires voiceover.m4a in demo/)
-cd ..
-./add-voiceover.sh
+python etl/fetch_pubmed.py && python etl/fetch_trials.py && python etl/build_db.py
+python etl/gen_inventory.py && python etl/gen_team.py && python etl/gen_demo_images.py
 ```
 
-The demo recorder scripts and narration are tracked in the repo (demo/.rec/, demo/NARRATION.md), but the generated videos (*.mp4, *.m4a) are gitignored.
-
-
-# Open in browser
-# http://127.0.0.1:8000
-```
-
-The app will automatically use the offline fallback if no watsonx credentials are configured.
-
-### Rebuild Data (Optional)
-
-If you want to rebuild the database from scratch:
-
+**Build the static site (for GitHub Pages):**
 ```bash
-# Fetch latest data
-python etl/fetch_pubmed.py
-python etl/fetch_trials.py
-
-# Build database and BM25 index
-python etl/build_db.py
-
-# Generate inventory and team data
-python etl/gen_inventory.py
-python etl/gen_team.py
+python web-build/build_static.py      # → ./site/  (deploy this folder)
 ```
 
-## Example Workflow
-
-1. **Ask a question:** "What is the state of PARP inhibitors in BRCA-wildtype TNBC?"
-2. **Review evidence:** See synthesized answer with citations (PMIDs, NCT IDs)
-3. **Design experiment:** Get AI-suggested experimental design
-4. **Generate protocol:** Receive detailed step-by-step protocol
-5. **Check inventory:** View required reagents and what needs to be ordered
+**Produce the demo video (optional):** Playwright recorder in `demo/.rec/` (`make.sh`), narration in `demo/NARRATION.md`, voice-over via `demo/add-voiceover.sh`. Generated videos are gitignored.
 
 ## Project Structure
 
 ```
 benchpilot/
-├── README.md                 # This file
-├── PROJECT-MAP.md            # Detailed project plan
-├── SPEC.md                   # Technical specification
-├── INVENTORY-SPEC.md         # Inventory system spec
-├── .bob/                     # Bob configuration (proof of usage)
-│   └── mcp.json
-├── api/                      # FastAPI backend
-│   └── main.py               # REST API endpoints
-├── web/                      # Frontend
-│   ├── index.html            # Main UI
-│   ├── styles.css            # Styling
-│   └── app.js                # Client-side logic
-├── etl/                      # Data ingestion
-│   ├── fetch_pubmed.py       # PubMed fetcher
-│   ├── fetch_trials.py       # ClinicalTrials.gov fetcher
-│   ├── build_db.py           # Database builder
-│   └── gen_inventory.py      # Inventory generator
-├── data/
-│   └── snapshot/             # TNBC corpus (785 papers, 1468 trials, inventory)
-│       ├── papers.jsonl
-│       ├── trials.jsonl
-│       └── inventory.jsonl
+├── README.md · PROJECT-MAP.md · SPEC.md · INVENTORY-SPEC.md
+├── .bob/mcp.json               # Bob GitHub-MCP config (proof of Bob usage)
+├── api/main.py                 # FastAPI backend (REST API)
+├── web/                        # Frontend (index.html, app.js, styles.css)
+│   ├── static-backend.js       # client-side API for the static GitHub Pages build
+│   └── uploads/                # protocol images (Western blot, IF, plate map)
+├── web-build/build_static.py   # builds ./site/ for GitHub Pages
+├── etl/                        # PubMed + ClinicalTrials.gov ETL, inventory/team/image generators
 ├── src/
-│   ├── llm/                  # LLM clients
-│   │   ├── granite.py        # Granite client (watsonx)
-│   │   └── reasoning.py      # Reasoning logic
-│   ├── memory/               # Knowledge base
-│   │   └── retrieval.py      # BM25 retrieval
-│   ├── protocols/            # Protocol generation
-│   │   └── generate.py
-│   └── inventory/            # Inventory system
-│       ├── store.py          # CRUD operations
-│       └── match.py          # Fuzzy matching
-├── benchpilot.db             # SQLite database (gitignored)
+│   ├── llm/                    # granite.py (watsonx) · reasoning.py (targets/hypotheses/plan)
+│   ├── memory/retrieval.py     # BM25
+│   ├── protocols/generate.py   # protocol templates
+│   ├── inventory/              # store.py · match.py
+│   └── team/                   # store.py · digest.py (AI stand-up + assignment)
+├── data/snapshot/*.jsonl       # committed TNBC corpus + inventory + team
 └── requirements.txt
 ```
 
 ## Technology Stack
 
-- **Language:** Python 3.11
-- **Backend:** FastAPI
-- **Frontend:** Vanilla JavaScript + HTML/CSS
-- **Data Sources:** PubMed E-utilities, ClinicalTrials.gov API v2
-- **Database:** SQLite
-- **Retrieval:** BM25 (rank_bm25)
-- **LLM:** IBM Granite via watsonx.ai (+ offline fallback)
-- **Development:** IBM Bob (spec-driven development)
-
-## Roadmap
-
-### Phase 1 (Current - V2)
-- ✅ Real TNBC knowledge base (785 papers, 1468 trials)
-- ✅ BM25 retrieval for precise evidence matching
-- ✅ IBM Granite reasoning (with offline fallback)
-- ✅ Complete workflow: question → evidence → design → protocol → inventory
-- ✅ FastAPI backend + web UI
-
-### Phase 2 (Next)
-- 🔄 Evidence gap scoring engine
-- 🔄 Redundancy detection for planned experiments
-- 🔄 Ranked next-experiment suggestions
-- 🔄 Decision ledger (accept/modify/reject)
-
-### Phase 3 (Future)
-- ⏳ Knowledge graph visualization
-- ⏳ Multi-user support with authentication
-- ⏳ Integration with lab management systems (LIMS)
-- ⏳ Real-time collaboration features
-
-## License
-
-MIT License - See LICENSE file for details
+Python 3.11 · FastAPI · Vanilla JS/HTML/CSS · SQLite · **BM25** retrieval · **IBM Granite via watsonx.ai** (offline fallback) · PubMed E-utilities · ClinicalTrials.gov API v2 · **IBM Bob** (spec-driven development) · Playwright + ffmpeg (demo).
 
 ## Acknowledgments
 
-- Built for the **IBM AI Builders Challenge** (Wildcard Track)
-- Developed with **IBM Bob** as the primary coding assistant
-- Data from **PubMed** (NCBI) and **ClinicalTrials.gov**
-- Powered by **IBM Granite** via watsonx.ai
+Built for the **IBM AI Builders Challenge** (Wildcard Track), developed with **IBM Bob**. Data from **PubMed** (NCBI) and **ClinicalTrials.gov**; reasoning powered by **IBM Granite** via watsonx.ai.
 
 ---
 
-**Repository:** https://github.com/Lipskerov/benchpilot
-
-**Contact:** Fedor Lipskerov
+**Repository:** https://github.com/Lipskerov/benchpilot · **Contact:** Fedor Lipskerov · License: MIT
