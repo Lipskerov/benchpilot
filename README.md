@@ -16,15 +16,6 @@
 
 ## ✅ Challenge submission (Wildcard — Future of Work)
 
-| Requirement | Status |
-|---|---|
-| Working prototype built with **IBM Bob** (primary dev tool) | ✅ Live app + FastAPI backend, developed with Bob (see *How IBM Bob was used*) |
-| **AI as a core functional component** | ✅ Retrieval, evidence synthesis, hypothesis generation, experiment planning, and team orchestration are all AI-driven |
-| **IBM SkillsBuild** learning activity | ✅ Completed |
-| **Public GitHub repo** with README (problem · solution · AI architecture · theme · how Bob was used) | ✅ This document |
-| **Public demo/presentation video** (max 3 min) | ✅ 2:36 on YouTube |
-| Selected theme | ✅ Wildcard — *Build Intelligent Systems for the Future of Work* |
-
 ---
 
 ## Problem
