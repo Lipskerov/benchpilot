@@ -87,6 +87,19 @@ def _narrative(f: Dict, project_id) -> str:
 
 
 def suggest_assignments(project_id: Optional[str] = None) -> List[Dict]:
+
+# ============ FUTURE: IBM Bob API Integration ============
+# TODO: Replace rule-based assignment with IBM Bob API
+# Placeholder for Bob API call:
+#   - POST to Bob API endpoint with unassigned tasks, member profiles, workload
+#   - Bob analyzes task requirements, member expertise, and current capacity
+#   - Returns intelligent assignment suggestions with reasoning
+# Example:
+#   response = bob_api.suggest_task_assignments(tasks=tasks, members=members, workload=workload)
+#   return response.suggestions
+# =========================================================
+
+
     """Suggest an owner for each unassigned task: least-loaded member whose focus fits the target."""
     store = TeamStore()
     workload = {w["id"]: w for w in store.workload()}

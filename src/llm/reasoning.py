@@ -255,6 +255,19 @@ def _ev_note(papers, trials):
 
 
 def generate_hypotheses(target, question="", papers=None, trials=None):
+
+# ============ FUTURE: IBM Bob API Integration ============
+# TODO: Replace offline hypothesis generation with IBM Bob API
+# Placeholder for Bob API call:
+#   - POST to Bob API endpoint with target, question, evidence
+#   - Bob generates 3 distinct, testable hypotheses grounded in evidence
+#   - Returns structured JSON with statement, mechanism, prediction, etc.
+# Example:
+#   response = bob_api.generate_hypotheses(target=target, question=question, evidence=papers+trials)
+#   return response.hypotheses
+# =========================================================
+
+
     papers, trials = papers or [], trials or []
     if granite.is_configured():
         try:

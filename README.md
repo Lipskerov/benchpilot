@@ -136,6 +136,7 @@ BenchPilot V2 demonstrates AI as a co-worker for scientific research — a domai
 - Duplicated-effort detection across projects
 - AI-suggested task assignments matched to member focus and current load
 - Workload balancing and capacity planning
+- 🔄 **Future:** IBM Bob API integration for intelligent task assignment (placeholder in src/team/digest.py)
 
 ✅ **Intelligent Orchestration**
 - Automatic detection of blocked tasks (missing reagents)
@@ -151,6 +152,7 @@ IBM Bob was the primary development tool for BenchPilot V2, authoring the majori
 - Rich hypotheses with evidence citations and confidence scores
 - Work-package experiment plans with timelines and milestones
 - Judge-friendly plain-language summaries for non-experts
+- 🔄 **Future:** IBM Bob API integration for hypothesis generation (placeholder in src/llm/reasoning.py)
 
 ✅ **Project Editor & Drag-Drop Board**
 - Visual project editor with team assignment
