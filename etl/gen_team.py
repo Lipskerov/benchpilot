@@ -20,7 +20,8 @@ def d(offset):  # due date helper
 
 
 MEMBERS = [
-    ("MEM-01", "Dr. Elena Rossi", "Principal Investigator", "ER", "Program lead · TNBC therapeutics"),
+    ("MEM-00", "Fedor Lipskerov", "Lead Researcher (PI)", "FL", "Lead researcher · TNBC program"),
+    ("MEM-01", "Dr. Elena Rossi", "Principal Investigator", "ER", "Co-investigator · TNBC therapeutics"),
     ("MEM-02", "Dr. Sam Okafor", "Postdoc", "SO", "DNA-damage response · PARP"),
     ("MEM-03", "Maya Chen", "PhD student", "MC", "Immuno-oncology · PD-L1"),
     ("MEM-04", "Liam Novak", "PhD student", "LN", "ADCs · TROP2"),
@@ -30,11 +31,11 @@ MEMBERS = [
 
 PROJECTS = [
     ("PRJ-01", "PARP synthetic lethality in BRCA-wildtype TNBC",
-     "Test whether ATR/PARP combinations restore synthetic lethality in HR-proficient TNBC.", "active", "MEM-02"),
+     "Test whether ATR/PARP combinations restore synthetic lethality in HR-proficient TNBC.", "active", "MEM-00"),
     ("PRJ-02", "TROP2 ADC response biomarkers",
-     "Identify determinants of response to TROP2-directed ADCs across TNBC lines.", "active", "MEM-01"),
+     "Identify determinants of response to TROP2-directed ADCs across TNBC lines.", "active", "MEM-00"),
     ("PRJ-03", "Checkpoint blockade & PD-L1 dynamics",
-     "Characterize PD-L1 regulation and immunotherapy response in TNBC models.", "active", "MEM-02"),
+     "Characterize PD-L1 regulation and immunotherapy response in TNBC models.", "active", "MEM-00"),
 ]
 
 # (id, project, title, stage, target, assignee, status, priority, due, reagents)
@@ -77,12 +78,56 @@ TASKS = [
      ["Annexin V-FITC Apoptosis Kit", "Propidium Iodide", "6-well plate, TC-treated"]),
     ("TSK-14", "PRJ-03", "Draft immunotherapy-resistance hypothesis", "discover",
      "PD-L1 / PD-1 (immune checkpoint)", None, "todo", "low", d(18), []),
+    ("TSK-15", "PRJ-03", "Western blot — PD-L1 expression across TNBC lines", "experiment",
+     "PD-L1 / PD-1 (immune checkpoint)", "MEM-06", "done", "high", d(-2),
+     ["Pierce BCA Protein Assay Kit", "Acrylamide/Bis 30%", "Anti-PD-L1 antibody",
+      "Goat anti-Rabbit HRP", "SuperSignal West Pico ECL", "Anti-GAPDH (loading control)"]),
+    ("TSK-16", "PRJ-03", "IF microscopy — PD-L1 localization (green) / DAPI", "experiment",
+     "PD-L1 / PD-1 (immune checkpoint)", "MEM-03", "in_progress", "high", d(4),
+     ["Paraformaldehyde 16%", "Triton X-100", "Anti-PD-L1 antibody", "DAPI", "24-well plate, TC-treated"]),
+    ("TSK-17", "PRJ-03", "Set up 96-well treatment plate (groups + dose series)", "experiment",
+     "PD-L1 / PD-1 (immune checkpoint)", "MEM-05", "done", "medium", d(-5),
+     ["Paclitaxel", "Anti-PD-L1 antibody", "96-well plate, clear flat", "MDA-MB-468 cell line", "DMSO"]),
 ]
 
+# experimental design + attached photos for select tasks (how the protocol was run)
+EXTRA = {
+    "TSK-15": {
+        "design": {
+            "cell_lines": ["MCF-10A (normal control)", "MDA-MB-231 (basal-like)", "MDA-MB-468 (PD-L1-high)"],
+            "groups": ["Baseline (untreated)"], "replicates": 3,
+            "controls": ["GAPDH loading control", "MCF-10A normal line"],
+            "readout": "PD-L1 band intensity normalised to GAPDH"},
+        "attachments": ["/uploads/western_pdl1.png"]},
+    "TSK-16": {
+        "design": {
+            "cell_lines": ["MDA-MB-468 (PD-L1-high)", "MDA-MB-231"],
+            "groups": ["Vehicle", "IFN-γ stimulated"], "replicates": 3,
+            "controls": ["Secondary-antibody only (no primary)", "DAPI only"],
+            "readout": "PD-L1 membrane localisation (green) vs nuclei (DAPI, blue)"},
+        "attachments": ["/uploads/if_pdl1.png"]},
+    "TSK-17": {
+        "design": {
+            "cell_lines": ["MDA-MB-468 (PD-L1-high)", "MDA-MB-231", "MCF-10A (normal)"],
+            "groups": ["Vehicle (DMSO)", "Chemotherapy (paclitaxel)", "Immunotherapy (anti-PD-L1)", "Chemo + Immuno"],
+            "replicates": 3, "controls": ["Untreated", "Vehicle (DMSO)"],
+            "readout": "5-point dose series per group"},
+        "attachments": ["/uploads/plate_map.svg"]},
+}
+
 DDL_M = "CREATE TABLE IF NOT EXISTS members (id TEXT PRIMARY KEY, name TEXT, role TEXT, initials TEXT, focus TEXT)"
-DDL_P = "CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, name TEXT, goal TEXT, status TEXT, lead TEXT, created TEXT)"
+DDL_P = "CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, name TEXT, goal TEXT, status TEXT, lead TEXT, members TEXT, created TEXT)"
+
+
+def _project_members(pid, lead):
+    ppl = {lead} if lead else set()
+    for t in TASKS:
+        if t[1] == pid and t[5]:
+            ppl.add(t[5])
+    return sorted(ppl)
 DDL_T = ("CREATE TABLE IF NOT EXISTS tasks (id TEXT PRIMARY KEY, project_id TEXT, title TEXT, stage TEXT, "
-         "target TEXT, assignee TEXT, status TEXT, priority TEXT, due TEXT, reagents TEXT, notes TEXT, created TEXT)")
+         "target TEXT, assignee TEXT, status TEXT, priority TEXT, due TEXT, reagents TEXT, notes TEXT, "
+         "created TEXT, design TEXT, attachments TEXT)")
 
 
 def main():
@@ -97,12 +142,14 @@ def main():
         conn.execute(ddl)
 
     conn.executemany("INSERT INTO members VALUES (?,?,?,?,?)", MEMBERS)
-    conn.executemany("INSERT INTO projects VALUES (?,?,?,?,?,?)",
-                     [(*p, d(-30)) for p in PROJECTS])
+    conn.executemany("INSERT INTO projects VALUES (?,?,?,?,?,?,?)",
+                     [(p[0], p[1], p[2], p[3], p[4], json.dumps(_project_members(p[0], p[4])), d(-30))
+                      for p in PROJECTS])
     conn.executemany(
-        "INSERT INTO tasks (id,project_id,title,stage,target,assignee,status,priority,due,reagents,notes,created) "
-        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-        [(i, pj, ti, st, tg, asg, stat, pr, du, json.dumps(rg), "", d(-20))
+        "INSERT INTO tasks (id,project_id,title,stage,target,assignee,status,priority,due,reagents,notes,"
+        "created,design,attachments) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        [(i, pj, ti, st, tg, asg, stat, pr, du, json.dumps(rg), "", d(-20),
+          json.dumps(EXTRA.get(i, {}).get("design")), json.dumps(EXTRA.get(i, {}).get("attachments", [])))
          for (i, pj, ti, st, tg, asg, stat, pr, du, rg) in TASKS])
     conn.commit()
 
@@ -115,7 +162,7 @@ def main():
                                 "initials": m[3], "focus": m[4]}) + "\n")
         for p in PROJECTS:
             f.write(json.dumps({"kind": "project", "id": p[0], "name": p[1], "goal": p[2],
-                                "status": p[3], "lead": p[4]}) + "\n")
+                                "status": p[3], "lead": p[4], "members": _project_members(p[0], p[4])}) + "\n")
         for t in TASKS:
             f.write(json.dumps({"kind": "task", "id": t[0], "project_id": t[1], "title": t[2],
                                 "stage": t[3], "target": t[4], "assignee": t[5], "status": t[6],

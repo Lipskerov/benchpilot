@@ -1,0 +1,6 @@
+{
+  "name": "benchpilot-demo-recorder",
+  "private": true,
+  "description": "Playwright screen recorder for the BenchPilot ~3-min demo",
+  "dependencies": { "playwright": "^1.61.0" }
+}

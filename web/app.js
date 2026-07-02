@@ -72,53 +72,105 @@ function renderDiscover(r) {
     <div class="evcol"><h4>Papers</h4>${r.papers.map(p => `
       <div class="ev"><div class="evtitle">${esc(p.title)}</div>
       <div class="evmeta"><a href="https://pubmed.ncbi.nlm.nih.gov/${esc(p.id)}/" target="_blank">PMID ${esc(p.id)}</a>
-      <span>${esc(p.year || "")}</span><span class="pill">score ${p.score}</span></div></div>`).join("")}</div>
+      <span>${esc(p.year || "")}</span><span class="pill">score ${p.score}</span></div>
+      ${p.abstract ? `<details class="ev-more"><summary>Show abstract</summary><div class="ev-body">${esc(p.abstract)}</div></details>` : ""}
+      </div>`).join("")}</div>
     <div class="evcol"><h4>Clinical trials</h4>${r.trials.map(t => `
       <div class="ev"><div class="evtitle">${esc(t.title)}</div>
       <div class="evmeta"><a href="https://clinicaltrials.gov/study/${esc(t.id)}" target="_blank">${esc(t.id)}</a>
-      <span class="pill">${esc(t.phase || "—")}</span><span>${esc(t.status || "")}</span></div></div>`).join("")}</div>
+      <span class="pill">${esc(t.phase || "—")}</span><span>${esc(t.status || "")}</span></div>
+      <details class="ev-more"><summary>Show trial details</summary><div class="ev-body">
+        <div><span class="hk">Status</span>${esc(t.status || "—")}</div>
+        <div><span class="hk">Phase</span>${esc(t.phase || "—")}</div>
+        ${t.sponsor ? `<div><span class="hk">Sponsor</span>${esc(t.sponsor)}</div>` : ""}
+        ${t.interventions ? `<div><span class="hk">Interventions</span>${esc(t.interventions)}</div>` : ""}
+        ${(t.primary_outcomes && t.primary_outcomes.length) ? `<div><span class="hk">Primary outcomes</span>${t.primary_outcomes.map(esc).join("; ")}</div>` : ""}
+      </div></details>
+      </div>`).join("")}</div>
   </div>`;
   return h;
 }
 
-// ---------- 02 design ----------
+// ---------- 02 hypotheses & plan ----------
 async function goDesign(target, assay) {
-  state.target = target;
+  state.target = target; state.assay = assay;
   show("design");
-  const body = $("#designBody");
-  body.className = "";
-  body.innerHTML = `<div class="card"><span class="spinner"></span> Designing experiment for <b>${esc(target)}</b>…</div>`;
-  const d = await api("/api/design", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target, question: state.question }) });
-  body.innerHTML = renderDesign(target, d);
-  $("#toProtocol").onclick = () => {
-    state.experiment = `${d.assay_type || assay} assay for ${target} in TNBC — ${d.hypothesis}`;
-    show("protocol");
-    $("#protoInput").value = state.experiment;
-    runProtocol();
-  };
+  const body = $("#designBody"); body.className = "";
+  body.innerHTML = `<div class="card"><span class="spinner"></span> Generating hypotheses for <b>${esc(target)}</b>…</div>`;
+  const hyps = await api("/api/hypotheses", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target, question: state.question }) });
+  state.hypotheses = hyps;
+  body.innerHTML = renderHypotheses(target, hyps);
+  $$("#designBody [data-hyp]").forEach(b => b.onclick = () => selectHypothesis(b.dataset.hyp));
 }
 
-function renderDesign(target, d) {
-  const eng = d.engine === "granite" ? "IBM Granite" : "template";
-  const list = a => (a && a.length) ? `<ul class="clean">${a.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "—";
-  const chips = a => (a && a.length) ? `<div class="chips">${a.map(x => `<span class="chip">${esc(x)}</span>`).join("")}</div>` : "—";
-  return `
-    <div class="card">
-      <h3>Target · ${eng}</h3>
-      <div style="font-size:16px;font-weight:600;margin-bottom:4px">${esc(target)}</div>
-      <div class="synthesis">${esc(d.hypothesis || "")}</div>
-    </div>
-    <div class="card">
-      <div class="kv">
-        <div class="k">Rationale</div><div>${esc(d.rationale || "")}</div>
-        <div class="k">Assay type</div><div><span class="chip n">${esc(d.assay_type || "")}</span></div>
-        <div class="k">Model systems</div><div>${chips(d.model_systems)}</div>
-        <div class="k">Approach</div><div>${esc(d.approach || "")}</div>
-        <div class="k">Readouts</div><div>${list(d.readouts)}</div>
-        <div class="k">Controls</div><div>${list(d.controls)}</div>
+function renderHypotheses(target, hyps) {
+  const eng = (hyps[0] && hyps[0].engine === "granite") ? "IBM Granite" : "grounded templates";
+  let h = `<div class="hyp-head"><div><div class="hh-target">${esc(target)}</div>
+    <div class="hh-sub">${hyps.length} candidate hypotheses · ${eng}</div></div></div>`;
+  h += `<div class="hyps">` + hyps.map(x => `
+    <div class="hyp">
+      <div class="hyp-top"><span class="hid">${esc(x.id)}</span><span class="conf conf-${x.confidence}">${esc(x.confidence)} confidence</span></div>
+      ${x.plain ? `<div class="hplain">💡 ${esc(x.plain)}</div>` : ""}
+      <div class="hstate">${esc(x.statement)}</div>
+      <div class="hgrid">
+        <div><span class="hk">Prediction</span>${esc(x.prediction || "")}</div>
+        <div><span class="hk">Falsification</span>${esc(x.falsification || "")}</div>
+        <div><span class="hk">Mechanism</span>${esc(x.mechanism || "")}</div>
+        <div><span class="hk">Novelty</span>${esc(x.novelty || "")}</div>
       </div>
-    </div>
-    <button class="primary" id="toProtocol">Draft protocol &amp; check stock →</button>`;
+      <div class="hrat">${esc(x.rationale || "")}</div>
+      <button class="primary hbtn" data-hyp="${esc(x.id)}">Select &amp; plan experiments →</button>
+    </div>`).join("") + `</div>`;
+  return h;
+}
+
+async function selectHypothesis(hid) {
+  const hyp = (state.hypotheses || []).find(h => h.id === hid);
+  if (!hyp) return;
+  state.hypothesis = hyp;
+  const body = $("#designBody");
+  body.innerHTML = renderHypotheses(state.target, state.hypotheses.filter(h => h.id === hid))
+    + `<div class="card"><span class="spinner"></span> Planning experiments…</div>`;
+  const plan = await api("/api/plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target: state.target, hypothesis: hyp, question: state.question }) });
+  state.currentPlan = plan;
+  body.innerHTML = renderHypotheses(state.target, state.hypotheses.filter(h => h.id === hid)) + renderPlan(plan);
+  $("#planSpinup").onclick = spinup;
+  $("#backHyps").onclick = () => { body.innerHTML = renderHypotheses(state.target, state.hypotheses); $$("#designBody [data-hyp]").forEach(b => b.onclick = () => selectHypothesis(b.dataset.hyp)); };
+}
+
+function renderPlan(plan) {
+  const wps = plan.work_packages, tot = plan.total_weeks || 1;
+  const eng = plan.engine === "granite" ? "IBM Granite" : "template";
+  let h = `<div class="plan-head"><div class="section-label" style="margin:22px 0 6px">Experiment plan · ${wps.length} work packages · ${tot} weeks · ${eng}</div>
+    <button class="ghost" id="backHyps" style="height:32px">← other hypotheses</button></div>`;
+  // Gantt
+  h += `<div class="gantt"><div class="gantt-ruler">` +
+    Array.from({ length: tot }, (_, i) => `<span style="width:${100 / tot}%">w${i + 1}</span>`).join("") + `</div>`;
+  h += wps.map((w, i) => {
+    const left = 100 * w.start_week / tot, width = 100 * (w.end_week - w.start_week) / tot;
+    return `<div class="gantt-row"><div class="gantt-label"><b>${esc(w.id)}</b> ${esc(w.title)}</div>
+      <div class="gantt-track"><div class="gantt-bar bar${i % 5}" style="left:${left}%;width:${width}%">
+        ${esc(w.assay_type)} · ${w.end_week - w.start_week}w</div></div></div>`;
+  }).join("") + `</div>`;
+  // WP detail cards
+  h += `<div class="section-label">Work packages</div><div class="wps">` + wps.map(w => `
+    <div class="wp">
+      <div class="wp-top"><span class="hid">${esc(w.id)}</span>
+        <span class="wp-when">wk ${w.start_week + 1}–${w.end_week}${(w.depends_on || []).length ? " · after " + w.depends_on.join(", ") : " · start now"}</span></div>
+      <div class="wp-title">${esc(w.title)}</div>
+      <div class="wp-aim">${esc(w.aim || "")}</div>
+      <div class="wp-meta">
+        ${w.design && w.design.groups ? `<div><span class="hk">Test groups</span>${w.design.groups.map(esc).join(", ")} · n=${w.design.replicates}</div>` : ""}
+        ${w.model_systems && w.model_systems.length ? `<div><span class="hk">Cell lines</span>${w.model_systems.map(esc).join(", ")}</div>` : ""}
+        ${w.design && w.design.controls ? `<div><span class="hk">Controls</span>${w.design.controls.map(esc).join(", ")}</div>` : ""}
+        ${w.readouts && w.readouts.length ? `<div><span class="hk">Readouts</span>${w.readouts.map(esc).join(", ")}</div>` : ""}
+        ${w.reagents && w.reagents.length ? `<div><span class="hk">Reagents</span>${w.reagents.map(esc).join(", ")}</div>` : ""}
+      </div>
+    </div>`).join("") + `</div>`;
+  h += `<div class="spinup-cta"><div><div class="sct-title">Turn this plan into a project</div>
+    <div class="sct-sub">Each work package becomes a scheduled, assignable task — with reagent checks — on the team board.</div></div>
+    <button class="primary" id="planSpinup">🚀 Spin up project &amp; assign tasks →</button></div>`;
+  return h;
 }
 
 // ---------- 03 protocol ----------
@@ -131,9 +183,13 @@ async function runProtocol() {
   const body = $("#protocolBody");
   body.innerHTML = `<div class="card"><span class="spinner"></span> Drafting protocol and reconciling against live stock…</div>`;
   const r = await api("/api/protocol", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ experiment: exp }) });
+  state.lastMaterials = (r.check || []).map(c => c.required_name);
+  state.lastAssay = (r.protocol && r.protocol.title || "").toLowerCase().includes("qpcr") ? "qpcr" : "experiment";
   body.innerHTML = renderProtocol(r);
   const btn = $("#dlOrder");
   if (btn) btn.onclick = () => downloadCSV(r.order_list);
+  const sb = $("#spinupBtn");
+  if (sb) sb.onclick = spinup;
 }
 
 function renderProtocol(r) {
@@ -163,6 +219,10 @@ function renderProtocol(r) {
   } else {
     h += `<div class="order ok" style="margin-top:16px">✓ All materials in stock — ready to run.</div>`;
   }
+  h += `<div class="spinup-cta">
+    <div><div class="sct-title">Hand this to the team</div>
+    <div class="sct-sub">Create a project and auto-assign discovery → design → protocol → experiment → analysis tasks.</div></div>
+    <button class="primary" id="spinupBtn">🚀 Spin up project &amp; assign tasks →</button></div>`;
   return h;
 }
 
@@ -304,10 +364,45 @@ async function loadProjects() {
 }
 
 async function openProject(pid) {
+  state.currentProject = pid;
   const body = $("#projectBody");
   body.innerHTML = `<div class="card"><span class="spinner"></span> Loading board and running stand-up…</div>`;
   const [pr, su] = await Promise.all([api("/api/project/" + pid), api("/api/standup?project=" + pid)]);
-  body.innerHTML = renderStandup(su) + renderPipeline(pr.pipeline) + renderBoard(pr.board);
+  state.currentProjectData = pr;
+  body.innerHTML = renderProjectHeader(pr.project) + renderStandup(su) + renderPipeline(pr.pipeline)
+    + renderRoadmap(pr.board)
+    + `<div class="section-label">Board · drag cards to update status · click a card for details &amp; photos</div>` + renderBoard(pr.board);
+  $("#editProjBtn").onclick = () => openProjectEditor(pr, "edit");
+  wireBoardDnD(pid);
+}
+
+function renderProjectHeader(p) {
+  const team = (p.member_objs || []).map(m => avatar(m.initials, m.name)).join("");
+  return `<div class="proj-header">
+    <div><div class="ph-name">${esc(p.name)}</div>
+      <div class="ph-goal">${esc(p.goal || "")}</div>
+      <div class="ph-team">${team || '<span class="muted" style="color:var(--muted);font-size:12.5px">No team assigned yet</span>'}</div></div>
+    <button class="ghost" id="editProjBtn">✎ Edit project</button></div>`;
+}
+
+function wireBoardDnD(pid) {
+  let dragId = null, moved = false;
+  $$("#projectBody .taskcard").forEach(c => {
+    c.addEventListener("dragstart", e => { dragId = c.dataset.id; moved = true; c.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", c.dataset.id); });
+    c.addEventListener("dragend", () => { dragId = null; c.classList.remove("dragging"); setTimeout(() => moved = false, 50); });
+    c.addEventListener("click", () => { if (!moved) openTaskDrawer(c.dataset.id, pid); });
+  });
+  $$("#projectBody .col").forEach(col => {
+    col.addEventListener("dragover", e => { e.preventDefault(); col.classList.add("dragover"); });
+    col.addEventListener("dragleave", () => col.classList.remove("dragover"));
+    col.addEventListener("drop", async e => {
+      e.preventDefault(); col.classList.remove("dragover");
+      const id = dragId || e.dataTransfer.getData("text/plain");
+      if (!id) return;
+      await api("/api/tasks/" + id, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: col.dataset.status }) });
+      openProject(pid);
+    });
+  });
 }
 
 function renderStandup(s) {
@@ -315,8 +410,6 @@ function renderStandup(s) {
   let flags = "";
   if (s.blockers.length) flags += `<div class="flag"><b>Blockers:</b> ` +
     s.blockers.map(b => `${esc(b.title)} — ${esc(b.reason)}`).join(" · ") + `</div>`;
-  if (s.duplicates.length) flags += `<div class="flag dup"><b>Duplicated effort:</b> ` +
-    s.duplicates.map(d => `${esc(d.target)} (${d.who.map(esc).join(", ")})`).join(" · ") + `</div>`;
   if (s.unassigned.length) flags += `<div class="flag">${s.unassigned.length} unassigned task(s) — see Team &amp; tasks.</div>`;
   return `<div class="standup"><h3>✦ AI stand-up</h3>
     <div class="snarr">${esc(s.narrative)}</div>
@@ -332,7 +425,7 @@ function renderPipeline(pipe) {
 
 function renderBoard(board) {
   return `<div class="board">` + ["todo", "in_progress", "blocked", "done"].map(st => `
-    <div class="col"><h4>${STATUS_LABEL[st]} <span>${board[st].length}</span></h4>
+    <div class="col" data-status="${st}"><h4>${STATUS_LABEL[st]} <span>${board[st].length}</span></h4>
       ${board[st].map(t => taskCard(t)).join("")}
     </div>`).join("") + `</div>`;
 }
@@ -342,9 +435,11 @@ function taskCard(t) {
   const badge = t.reagents && t.reagents.length
     ? (rd.ready ? `<span class="ready">reagents ok</span>` : `<span class="ready block">need ${esc(rd.missing.join(", "))}</span>`)
     : "";
-  return `<div class="taskcard"><div class="tt">${esc(t.title)}</div>
+  const photos = (t.attachments && t.attachments.length) ? `<span class="tphoto">🖼 ${t.attachments.length}</span>` : "";
+  return `<div class="taskcard" draggable="true" data-id="${esc(t.id)}">
+    <div class="tt">${esc(t.title)}</div>
     <div class="trow"><span>${avatar(t.assignee_initials, t.assignee_name)}</span>
-    <span class="prio ${t.priority}">${t.priority}</span></div>
+    <span style="display:flex;gap:6px;align-items:center">${photos}<span class="prio ${t.priority}">${t.priority}</span></span></div>
     ${badge ? `<div class="trow" style="margin-top:7px">${badge}</div>` : ""}</div>`;
 }
 
@@ -360,9 +455,7 @@ async function loadTeam() {
       <div class="mload">${m.active} active${m.blocked ? ` · <span class="b">${m.blocked} blocked</span>` : ""}</div></div>
     </div>`).join("");
 
-  $("#dupBody").innerHTML = data.duplicates.length ? data.duplicates.map(d =>
-    `<div class="dup-warn">⚠️ <b>Duplicated effort</b> on <b>${esc(d.target)}</b>: ` +
-    d.tasks.map(t => `${esc(t.title)} (${esc(t.assignee_name)})`).join(" · ") + `</div>`).join("") : "";
+  $("#dupBody").innerHTML = "";
 
   const opts = a => data.members.map(m => `<option value="${m.id}" ${a === m.id ? "selected" : ""}>${esc(m.initials)} · ${esc(m.name)}</option>`).join("");
   $("#taskBody").innerHTML = data.tasks.map(t => `
@@ -398,3 +491,265 @@ $("#suggestBtn").onclick = async () => {
     b.textContent = "✓ Assigned"; b.disabled = true; loadTeam();
   });
 };
+
+// ================= V3.1: create + spin up =================
+function openModal(html) {
+  $("#modalCard").innerHTML = html;
+  $("#modal").classList.add("show");
+  $$("#modalCard [data-close]").forEach(b => b.onclick = closeModal);
+}
+function closeModal() { $("#modal").classList.remove("show"); }
+$("#modal").addEventListener("click", e => { if (e.target.id === "modal") closeModal(); });
+
+async function ensureMeta() {
+  if (!state.projects) state.projects = await api("/api/projects");
+  if (!state.members) { const t = await api("/api/team"); state.members = t.members; }
+}
+const memberOpts = (sel) => (state.members || []).map(m =>
+  `<option value="${m.id}" ${sel === m.id ? "selected" : ""}>${esc(m.initials)} · ${esc(m.name)}</option>`).join("");
+
+// discovery / plan -> project editor (assign team + adjust tasks, then save)
+async function spinup() {
+  await ensureMeta();
+  const q = state.question || $("#protoInput").value || "";
+  const tgt = state.target || "";
+  const lbl = tgt || (q.slice(0, 48) + (q.length > 48 ? "…" : ""));
+  const plan = state.currentPlan;
+  let tasks;
+  if (plan && plan.work_packages && plan.work_packages.length) {
+    const base = new Date();
+    const due = wk => { const d = new Date(base); d.setDate(d.getDate() + wk * 7); return d.toISOString().slice(0, 10); };
+    tasks = plan.work_packages.map(w => ({
+      title: `${w.id}: ${w.title}`, stage: w.stage || "experiment", target: tgt,
+      assignee: "", priority: "high", due: due(w.end_week), reagents: w.reagents || [],
+      design: w.design || null, status: "todo",
+    }));
+  } else {
+    const reagents = state.lastMaterials || [];
+    const assay = state.lastAssay || "experiment";
+    tasks = [
+      { title: `Literature & trial scan: ${lbl}`, stage: "discover", target: tgt, status: "done", priority: "medium", due: "", reagents: [] },
+      { title: `Design experiment`, stage: "design", target: tgt, priority: "high", due: "", reagents: [] },
+      { title: `Draft & source protocol: ${lbl}`, stage: "protocol", target: tgt, priority: "high", due: "", reagents },
+      { title: `Run ${assay} assay: ${lbl}`, stage: "experiment", target: tgt, priority: "high", due: "", reagents },
+      { title: `Analyze results: ${lbl}`, stage: "analysis", target: tgt, priority: "medium", due: "", reagents: [] },
+    ];
+  }
+  const goal = (state.hypothesis && state.hypothesis.statement) || q;
+  const lead = (state.members || []).some(m => m.id === "MEM-00") ? "MEM-00" : null;  // Fedor Lipskerov, lead researcher
+  const members = state.isDemo ? (state.members || []).map(m => m.id) : (lead ? [lead] : []);
+  openProjectEditor({ name: `${lbl} — TNBC`, goal, lead, members, tasks }, "create");
+}
+
+// suggestion under the search bar — fills the box so the user can edit/submit themselves
+$("#demoQ").onclick = () => { $("#q").value = $("#demoQ").textContent.trim(); $("#q").focus(); };
+
+// new project (empty editor)
+$("#newProjBtn").onclick = async () => {
+  await ensureMeta();
+  openProjectEditor({ name: "", goal: "", lead: null, members: [], tasks: [] }, "create");
+};
+
+// new task
+$("#newTaskBtn").onclick = async () => {
+  await ensureMeta();
+  const projOpts = state.projects.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
+  const stageOpts = ["discover", "design", "protocol", "experiment", "analysis"].map(s => `<option>${s}</option>`).join("");
+  openModal(`<h2>New task</h2>
+    <div class="formgrid">
+      <label>Project<select id="nt_proj">${projOpts}</select></label>
+      <label>Stage<select id="nt_stage">${stageOpts}</select></label>
+      <label class="full">Title<input id="nt_title" placeholder="e.g. PARP viability assay in HCC1937"></label>
+      <label>Target<input id="nt_target" placeholder="e.g. PARP/BRCA (HR deficiency)"></label>
+      <label>Assignee<select id="nt_assignee"><option value="">— Unassigned</option>${memberOpts()}</select></label>
+      <label>Priority<select id="nt_prio"><option>high</option><option selected>medium</option><option>low</option></select></label>
+      <label>Due<input id="nt_due" placeholder="YYYY-MM-DD"></label>
+      <label class="full">Reagents (comma-separated)<input id="nt_reag" placeholder="Olaparib, MTT reagent, 96-well plate, clear flat"></label>
+    </div>
+    <div class="modal-actions"><button class="ghost" data-close>Cancel</button><button class="primary" id="nt_save">Add task</button></div>`);
+  $("#nt_save").onclick = async () => {
+    const title = $("#nt_title").value.trim();
+    if (!title) { alert("Title required"); return; }
+    const reagents = $("#nt_reag").value.split(",").map(s => s.trim()).filter(Boolean);
+    await api("/api/tasks", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ project_id: $("#nt_proj").value, title, stage: $("#nt_stage").value,
+        target: $("#nt_target").value, assignee: $("#nt_assignee").value || null,
+        priority: $("#nt_prio").value, due: $("#nt_due").value, reagents }) });
+    closeModal(); loadTeam();
+  };
+};
+
+// ================= Project editor (create from experiment / edit) =================
+const STAGES = ["discover", "design", "protocol", "experiment", "analysis"];
+
+async function openProjectEditor(data, mode) {
+  await ensureMeta();
+  const isEdit = mode === "edit";
+  const members = state.members;
+  let proj, tasks = [];
+  if (isEdit) {
+    proj = { id: data.project.id, name: data.project.name, goal: data.project.goal,
+             lead: data.project.lead || "", members: data.project.members || [] };
+    Object.values(data.board).forEach(col => col.forEach(t => tasks.push({
+      _id: t.id, title: t.title, stage: t.stage, target: t.target, assignee: t.assignee || "",
+      priority: t.priority, due: t.due || "", reagents: t.reagents || [], status: t.status,
+      design: t.design || null, attachments: t.attachments || [],
+    })));
+  } else {
+    proj = { name: data.name || "", goal: data.goal || "", lead: data.lead || "", members: data.members || [] };
+    tasks = (data.tasks || []).map(t => ({ title: t.title, stage: t.stage, target: t.target || "",
+      assignee: t.assignee || "", priority: t.priority || "medium", due: t.due || "",
+      reagents: t.reagents || [], design: t.design || null, attachments: t.attachments || [],
+      status: t.status || "todo" }));
+  }
+  const removed = new Set();
+
+  const memberChecks = () => members.map(m =>
+    `<label class="mcheck"><input type="checkbox" value="${m.id}" ${(proj.members || []).includes(m.id) ? "checked" : ""}>
+     ${avatar(m.initials, m.name)} ${esc(m.name)}</label>`).join("");
+  const assigneeSel = a => `<select class="mini te-assignee"><option value="">—</option>${members.map(m =>
+    `<option value="${m.id}" ${a === m.id ? "selected" : ""}>${esc(m.initials)}</option>`).join("")}</select>`;
+  const sel = (cls, val, opts) => `<select class="mini ${cls}">${opts.map(o =>
+    `<option ${o === val ? "selected" : ""}>${o}</option>`).join("")}</select>`;
+  const taskRows = () => tasks.map((t, i) => `
+    <div class="te-row" data-i="${i}">
+      <input class="te-title" value="${esc(t.title)}" placeholder="Task title">
+      <div class="te-ctrls">${sel("te-stage", t.stage, STAGES)}${assigneeSel(t.assignee)}${sel("te-prio", t.priority, ["high", "medium", "low"])}
+        <input class="te-due mini" value="${esc(t.due)}" placeholder="due">
+        <button class="te-del" title="remove">✕</button></div>
+    </div>`).join("");
+
+  function collect() {
+    $$("#pe_tasks .te-row").forEach(row => {
+      const i = +row.dataset.i;
+      tasks[i].title = $(".te-title", row).value;
+      tasks[i].stage = $(".te-stage", row).value;
+      tasks[i].assignee = $(".te-assignee", row).value;
+      tasks[i].priority = $(".te-prio", row).value;
+      tasks[i].due = $(".te-due", row).value;
+    });
+  }
+  function rerenderTasks() { $("#pe_tasks").innerHTML = taskRows(); wireDel(); }
+  function wireDel() {
+    $$("#pe_tasks .te-del").forEach(b => b.onclick = () => {
+      collect(); const i = +b.closest(".te-row").dataset.i;
+      if (tasks[i]._id) removed.add(tasks[i]._id);
+      tasks.splice(i, 1); rerenderTasks();
+    });
+  }
+  function autoAssign() {
+    collect();
+    const checked = $$("#pe_members input:checked").map(c => c.value);
+    const pool = members.filter(m => m.role !== "Principal Investigator" && (!checked.length || checked.includes(m.id)));
+    if (!pool.length) { alert("Add team members first."); return; }
+    const load = {}; pool.forEach(m => load[m.id] = 0);
+    tasks.forEach(t => {
+      if (t.status === "done") return;
+      const tgt = (t.target || proj.name || "").toLowerCase();
+      const best = pool.slice().sort((a, b) => {
+        const fit = m => tgt.split(/\W+/).filter(w => w.length > 3 && (m.focus || "").toLowerCase().includes(w)).length;
+        return (fit(b) - fit(a)) || (load[a.id] - load[b.id]);
+      })[0];
+      t.assignee = best.id; load[best.id]++;
+    });
+    rerenderTasks();
+  }
+
+  openModal(`<h2>${isEdit ? "Edit project" : "New project"}</h2>
+    <div class="formgrid">
+      <label class="full">Project name<input id="pe_name" value="${esc(proj.name)}" placeholder="e.g. ATR inhibition in TNBC"></label>
+      <label class="full">Goal<input id="pe_goal" value="${esc(proj.goal)}" placeholder="One-line objective"></label>
+      <label>Lead<select id="pe_lead"><option value="">— none</option>${members.map(m => `<option value="${m.id}" ${proj.lead === m.id ? "selected" : ""}>${esc(m.name)}</option>`).join("")}</select></label>
+    </div>
+    <div class="pe-sec">Team members</div>
+    <div id="pe_members" class="mchecks">${memberChecks()}</div>
+    <div class="pe-sec">Tasks <button class="ghost" id="pe_auto" style="height:30px;padding:0 12px;font-size:12.5px">✦ Auto-assign</button></div>
+    <div id="pe_tasks">${taskRows()}</div>
+    <button class="ghost" id="pe_add" style="height:34px;margin-top:10px">+ Add task</button>
+    <div class="modal-actions"><button class="ghost" data-close>Cancel</button><button class="primary" id="pe_save">${isEdit ? "Save changes" : "Create project"}</button></div>`);
+
+  wireDel();
+  $("#pe_add").onclick = () => { collect(); tasks.push({ title: "", stage: "experiment", target: proj.name || "", assignee: "", priority: "medium", due: "", reagents: [], status: "todo" }); rerenderTasks(); };
+  $("#pe_auto").onclick = autoAssign;
+  $("#pe_save").onclick = async () => {
+    collect();
+    const name = $("#pe_name").value.trim();
+    if (!name) { alert("Project name is required"); return; }
+    const goal = $("#pe_goal").value, lead = $("#pe_lead").value || null;
+    const mem = $$("#pe_members input:checked").map(c => c.value);
+    const btn = $("#pe_save"); btn.disabled = true; btn.textContent = "Saving…";
+    let pid;
+    if (isEdit) {
+      pid = proj.id;
+      await api("/api/project/" + pid, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, goal, lead, members: mem }) });
+      for (const id of removed) await api("/api/tasks/" + id, { method: "DELETE" });
+      for (const t of tasks) {
+        if (t._id) await api("/api/tasks/" + t._id, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: t.title, stage: t.stage, assignee: t.assignee || null, priority: t.priority, due: t.due }) });
+        else await api("/api/tasks", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ project_id: pid, title: t.title, stage: t.stage, target: t.target || name, assignee: t.assignee || null, priority: t.priority, due: t.due, reagents: t.reagents || [], design: t.design || null, attachments: t.attachments || [] }) });
+      }
+    } else {
+      const res = await api("/api/projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, goal, lead, members: mem }) });
+      pid = res.id;
+      for (const t of tasks) await api("/api/tasks", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ project_id: pid, title: t.title, stage: t.stage, target: t.target || name, assignee: t.assignee || null, status: t.status || "todo", priority: t.priority, due: t.due, reagents: t.reagents || [], design: t.design || null, attachments: t.attachments || [] }) });
+    }
+    closeModal(); state.projects = null; show("projects"); await loadProjects();
+    const card = $$("#projectPicker .proj-card").find(c => c.dataset.pid === pid);
+    if (card) { $$("#projectPicker .proj-card").forEach(x => x.classList.remove("active")); card.classList.add("active"); openProject(pid); card.scrollIntoView({ behavior: "smooth", block: "center" }); }
+  };
+}
+
+// ---- task detail drawer (design + reagents + photos + upload) ----
+async function openTaskDrawer(id, pid) {
+  const t = await api("/api/tasks/" + id);
+  const d = t.design || {};
+  const row = (k, v) => v ? `<div class="drow"><span class="dk">${k}</span><span>${esc(v)}</span></div>` : "";
+  const list = (k, a) => (a && a.length) ? `<div class="drow"><span class="dk">${k}</span><span>${a.map(esc).join(", ")}</span></div>` : "";
+  const rd = t.readiness || { ready: true, missing: [] };
+  const photos = (t.attachments || []).map(u =>
+    `<a href="${esc(u)}" target="_blank"><img class="tphoto-img" src="${esc(u)}" alt="attachment"></a>`).join("");
+  $("#drawer").innerHTML = `<button class="close" id="dClose">×</button>
+    <h2>${esc(t.title)}</h2>
+    <div class="dsub">${esc(t.id)} · ${esc(t.stage)} · <span class="prio ${t.priority}">${t.priority}</span></div>
+    ${row("Assignee", t.assignee_name)}${row("Status", t.status)}${row("Due", t.due)}${row("Target", t.target)}
+    ${d.groups || d.cell_lines ? `<div class="dsec">Experimental design</div>` : ""}
+    ${list("Cell lines", d.cell_lines)}${list("Groups", d.groups)}
+    ${row("Replicates", d.replicates ? "n = " + d.replicates : "")}${list("Controls", d.controls)}${row("Readout", d.readout)}
+    ${(t.reagents && t.reagents.length) ? `<div class="dsec">Reagents ${rd.ready ? '<span class="ready">in stock</span>' : '<span class="ready block">need ' + esc(rd.missing.join(", ")) + '</span>'}</div>
+      <div class="drow" style="grid-template-columns:1fr"><span>${t.reagents.map(esc).join(", ")}</span></div>` : ""}
+    <div class="dsec">Protocol photos</div>
+    <div class="tphotos">${photos || '<span class="muted" style="color:var(--muted);font-size:12.5px">No photos yet.</span>'}</div>
+    <label class="upl">📷 Add photo<input type="file" id="tUpload" accept="image/*" hidden></label>`;
+  openPanel();
+  $("#dClose").onclick = closePanel;
+  $("#tUpload").onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    const fd = new FormData(); fd.append("file", f);
+    await fetch("/api/tasks/" + id + "/photo", { method: "POST", body: fd });
+    openTaskDrawer(id, pid);                     // refresh drawer
+    if (pid && state.currentProject === pid) openProject(pid);   // refresh card badge
+  };
+}
+
+// per-project WP roadmap (collapsible timeline built from task due dates)
+const STATUS_BAR = { done: "#12a150", in_progress: "#0d9488", blocked: "#e0524a", todo: "#94a0ad" };
+function renderRoadmap(board) {
+  const tasks = [].concat(...Object.values(board));
+  const dated = tasks.filter(t => t.due);
+  if (!dated.length) return "";
+  const ms = dated.map(t => new Date(t.due).getTime());
+  const min = Math.min(...ms), max = Math.max(...ms);
+  const totW = Math.max(1, Math.round((max - min) / (7 * 864e5)) + 1);
+  const wk = t => Math.round((new Date(t.due).getTime() - min) / (7 * 864e5));
+  const sorted = tasks.slice().sort((a, b) => (a.due ? new Date(a.due) : 8e15) - (b.due ? new Date(b.due) : 8e15));
+  let h = `<details class="roadmap-wrap"><summary>▾ WP roadmap / timeline (${dated.length} scheduled)</summary>
+    <div class="gantt" style="margin-top:12px"><div class="gantt-ruler">` +
+    Array.from({ length: totW }, (_, i) => `<span style="width:${100 / totW}%">w${i + 1}</span>`).join("") + `</div>`;
+  h += sorted.map(t => {
+    const end = t.due ? Math.max(1, wk(t) + 1) : 1;
+    const width = 100 * end / totW;
+    const col = STATUS_BAR[t.status] || "#94a0ad";
+    return `<div class="gantt-row"><div class="gantt-label"><b>${esc((t.title.split(":")[0]))}</b> ${esc(t.title.replace(/^WP\d+:\s*/, "").slice(0, 40))}</div>
+      <div class="gantt-track"><div class="gantt-bar" style="left:0;width:${width}%;background:${col}">${esc(t.status)}${t.due ? " · " + esc(t.due) : ""}</div></div></div>`;
+  }).join("") + `</div></details>`;
+  return h;
+}

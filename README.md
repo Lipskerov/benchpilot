@@ -1,4 +1,4 @@
-# BenchPilot V3
+# BenchPilot V4
 
 **Evidence-grounded AI co-worker for TNBC bench-to-decision workflow + team collaboration**
 
@@ -20,14 +20,15 @@ This manual workflow is time-consuming, error-prone, and disconnected. BenchPilo
 
 ## Solution
 
-**BenchPilot V3** is a FastAPI web application that guides researchers through the complete bench-to-decision workflow with team collaboration:
+**BenchPilot V4** is a FastAPI web application that guides researchers through the complete bench-to-decision workflow with team collaboration:
 
 1. **Ask a scientific question** → Search 785 PubMed papers + 1,468 clinical trials
 2. **Find real targets** → Grounded evidence synthesis with citations (PMIDs, NCT IDs)
-3. **Design an experiment** → AI-suggested experimental design based on evidence
-4. **Draft a protocol** → Detailed step-by-step protocol with methods and materials
-5. **Check inventory** → Reconcile protocol against live reagent inventory, flag what to order
-6. **Manage projects & team** → Kanban board, AI stand-up, task assignment, workload balancing
+3. **Generate hypotheses** → Evidence-grounded hypotheses with confidence scores and plain-language summaries
+4. **Design an experiment** → Work-package experiment plans with timelines and detailed experimental design
+5. **Draft a protocol** → Detailed step-by-step protocol with methods, materials, and visual documentation
+6. **Check inventory** → Reconcile protocol against live reagent inventory, flag what to order
+7. **Manage projects & team** → Drag-drop Kanban board, AI stand-up, task assignment, workload balancing
 
 The reasoning layer runs on **IBM Granite (watsonx)** with a grounded offline fallback using BM25 retrieval. Every recommendation is defensible, not guessed.
 
@@ -80,12 +81,14 @@ flowchart TD
 | **Backend** | FastAPI | REST API endpoints |
 | **Frontend** | Vanilla JS + HTML/CSS | Interactive workflow UI |
 
-**Key Innovation:** Unlike generic LLM chatbots, BenchPilot V3:
+**Key Innovation:** Unlike generic LLM chatbots, BenchPilot V4:
 - Grounds every answer in a real, curated TNBC corpus
 - Uses BM25 retrieval (not just embeddings) for precise evidence matching
-- Generates actionable protocols with inventory reconciliation
+- Generates evidence-grounded hypotheses with confidence scores
+- Creates work-package experiment plans with timelines
+- Generates actionable protocols with visual documentation
 - Provides transparent citations for every claim
-- Orchestrates team collaboration with reagent-aware task management
+- Orchestrates team collaboration with drag-drop Kanban and reagent-aware task management
 
 ## Selected Theme
 
@@ -142,6 +145,31 @@ BenchPilot V2 demonstrates AI as a co-worker for scientific research — a domai
 
 IBM Bob was the primary development tool for BenchPilot V2, authoring the majority of the codebase through spec-driven development:
 
+## Enhanced Features (V4)
+
+✅ **Evidence-Grounded Hypotheses & Experiment Plans**
+- Rich hypotheses with evidence citations and confidence scores
+- Work-package experiment plans with timelines and milestones
+- Judge-friendly plain-language summaries for non-experts
+
+✅ **Project Editor & Drag-Drop Board**
+- Visual project editor with team assignment
+- Drag-and-drop Kanban board for task management
+- Per-project work-package roadmap with dependencies
+
+✅ **Experimental Design & Protocol Photos**
+- Detailed experimental design (test groups, cell lines, replicates)
+- Protocol photos and diagrams (Western blots, immunofluorescence, plate maps)
+- Visual documentation for reproducibility
+
+✅ **Demo Video Production**
+- Playwright-based demo recorder (demo/.rec/)
+- Voice-over script with narration (demo/NARRATION.md)
+- Automated video generation with ffmpeg
+- Demo videos excluded from repo (too large, produced locally)
+
+
+
 **Bob-authored commits:**
 - ✅ `chore: project scaffolding and specs` - Initial repo setup with PROJECT-MAP.md and SPEC.md
 - ✅ `feat(etl): PubMed + ClinicalTrials.gov TNBC fetchers` - Data ingestion scripts with rate limiting
@@ -150,6 +178,8 @@ IBM Bob was the primary development tool for BenchPilot V2, authoring the majori
 - ✅ `feat(app): grounded TNBC Q&A with citations (mock-LLM)` - Initial Streamlit UI (V1)
 - ✅ `feat(inventory): protocols + live-inventory check with order list` - Inventory system
 - ✅ `feat: BenchPilot V2 — FastAPI app, grounded BM25 retrieval, Granite reasoning, experiment design + protocol drafting, live reagent inventory with order flagging` - Complete V2 rewrite
+- ✅ `feat: BenchPilot V3 — team collaboration layer (project board, AI stand-up, task assignment, reagent-aware orchestration)` - Team management features
+- ✅ `feat: BenchPilot V4 — hypotheses + experiment plan/timeline, project editor + drag-drop board, WP roadmap, experiment design + protocol photos, judge-friendly demo; demo recorder (video excluded)` - Enhanced features and demo production
 
 **Development approach:**
 1. Wrote detailed SPEC.md with acceptance criteria for each feature
@@ -197,6 +227,28 @@ cp .env.example .env
 ```bash
 # Start the FastAPI server
 python -m uvicorn api.main:app --reload
+
+
+
+### Demo Video Production (Optional)
+
+The demo video is produced locally using Playwright automation and is not stored in the repository due to file size:
+
+```bash
+# Install demo recorder dependencies
+cd demo/.rec
+npm install
+
+# Record demo video
+./make.sh
+
+# Add voice-over (requires voiceover.m4a in demo/)
+cd ..
+./add-voiceover.sh
+```
+
+The demo recorder scripts and narration are tracked in the repo (demo/.rec/, demo/NARRATION.md), but the generated videos (*.mp4, *.m4a) are gitignored.
+
 
 # Open in browser
 # http://127.0.0.1:8000

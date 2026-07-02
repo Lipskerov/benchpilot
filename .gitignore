@@ -17,3 +17,12 @@ data/chroma/
 
 # TRACK data/snapshot/*.jsonl (committed for reproducibility)
 !data/snapshot/*.jsonl
+
+# Demo media — too large / binary for the repo
+demo/*.mp4
+demo/*.m4a
+demo/*.wav
+demo/.rec/video/
+demo/.rec/node_modules/
+.DS_Store
+**/.DS_Store

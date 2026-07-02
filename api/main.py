@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -104,6 +104,31 @@ def design(req: DesignReq):
     return reasoning.design_experiment(req.target, req.question)
 
 
+class HypReq(BaseModel):
+    target: str
+    question: str = ""
+
+
+@app.post("/api/hypotheses")
+def hypotheses(req: HypReq):
+    idx = get_index()
+    q = req.question or req.target
+    papers = idx.search(q, k=25, kind="paper")
+    trials = idx.search(q, k=25, kind="trial")
+    return reasoning.generate_hypotheses(req.target, req.question, papers, trials)
+
+
+class PlanReq(BaseModel):
+    target: str
+    hypothesis: dict
+    question: str = ""
+
+
+@app.post("/api/plan")
+def plan(req: PlanReq):
+    return reasoning.generate_plan(req.hypothesis, req.target, req.question)
+
+
 # ---------- 3. protocol + inventory check ----------
 @app.post("/api/protocol")
 def protocol(req: ProtocolReq):
@@ -162,6 +187,8 @@ class TaskReq(BaseModel):
     due: str = ""
     reagents: List[str] = []
     notes: str = ""
+    design: Optional[dict] = None
+    attachments: List[str] = []
 
 
 class TaskPatch(BaseModel):
@@ -169,6 +196,9 @@ class TaskPatch(BaseModel):
     assignee: Optional[str] = None
     priority: Optional[str] = None
     title: Optional[str] = None
+    stage: Optional[str] = None
+    due: Optional[str] = None
+    target: Optional[str] = None
 
 
 @app.get("/api/team")
@@ -190,12 +220,30 @@ class ProjectReq(BaseModel):
     name: str
     goal: str = ""
     lead: Optional[str] = None
+    members: List[str] = []
 
 
 @app.post("/api/projects")
 def project_create(p: ProjectReq):
-    ts = TeamStore(); pid = ts.add_project(p.name, p.goal, p.lead); ts.close()
+    ts = TeamStore()
+    pid = ts.add_project(p.name, p.goal, p.lead, p.members or ([p.lead] if p.lead else []))
+    ts.close()
     return {"id": pid}
+
+
+class ProjectPatch(BaseModel):
+    name: Optional[str] = None
+    goal: Optional[str] = None
+    lead: Optional[str] = None
+    status: Optional[str] = None
+    members: Optional[List[str]] = None
+
+
+@app.put("/api/project/{pid}")
+def project_update(pid: str, patch: ProjectPatch):
+    fields = patch.model_dump(exclude_unset=True)
+    ts = TeamStore(); ts.update_project(pid, fields); ts.close()
+    return {"ok": True}
 
 
 class SpinupReq(BaseModel):
@@ -229,10 +277,22 @@ def spinup(req: SpinupReq):
         ts.add_task({"project_id": pid, "title": title, "stage": stage, "target": tgt,
                      "status": status, "priority": prio,
                      "due": (today + timedelta(days=due_off)).isoformat(), "reagents": reagents})
-    ts.close()
     if req.auto_assign:
-        for s in digest.suggest_assignments(pid):
-            t2 = TeamStore(); t2.update_task(s["task_id"], {"assignee": s["suggest_id"]}); t2.close()
+        members = [m for m in ts.members() if m["role"] != "Principal Investigator"]
+        load = {w["id"]: w["active"] for w in ts.workload()}
+        for t in ts.tasks(project_id=pid):
+            if t["assignee"] or t["status"] == "done":
+                continue
+            tgt = (t["target"] or "").lower()
+
+            def score(m):
+                focus = (m["focus"] or "").lower()
+                fit = sum(1 for w in tgt.replace("/", " ").split() if len(w) > 3 and w in focus)
+                return (-fit, load[m["id"]])
+            best = sorted(members, key=score)[0]
+            ts.update_task(t["id"], {"assignee": best["id"]})
+            load[best["id"]] += 1          # spread the load as we go
+    ts.close()
     return {"project_id": pid}
 
 
@@ -256,15 +316,38 @@ def task_add(t: TaskReq):
 
 @app.patch("/api/tasks/{tid}")
 def task_patch(tid: str, patch: TaskPatch):
-    fields = {k: v for k, v in patch.model_dump().items() if v is not None}
+    fields = patch.model_dump(exclude_unset=True)
     ts = TeamStore(); ts.update_task(tid, fields); ts.close()
     return {"ok": True}
+
+
+@app.get("/api/tasks/{tid}")
+def task_get(tid: str):
+    ts = TeamStore()
+    t = ts.get_task(tid)
+    if not t:
+        ts.close(); raise HTTPException(404, "not found")
+    t["readiness"] = ts.readiness(t)
+    ts.close()
+    return t
 
 
 @app.delete("/api/tasks/{tid}")
 def task_delete(tid: str):
     ts = TeamStore(); ts.delete_task(tid); ts.close()
     return {"ok": True}
+
+
+@app.post("/api/tasks/{tid}/photo")
+async def task_photo(tid: str, file: UploadFile = File(...)):
+    uploads = WEB / "uploads"
+    uploads.mkdir(parents=True, exist_ok=True)
+    ext = Path(file.filename or "photo.png").suffix or ".png"
+    safe = f"{tid}_{abs(hash(file.filename or tid)) % 100000}{ext}"
+    dest = uploads / safe
+    dest.write_bytes(await file.read())
+    ts = TeamStore(); atts = ts.add_attachment(tid, f"/uploads/{safe}"); ts.close()
+    return {"attachments": atts}
 
 
 @app.get("/api/standup")

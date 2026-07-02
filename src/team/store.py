@@ -16,7 +16,8 @@ from src.inventory.match import check_protocol
 DB_PATH = "benchpilot.db"
 STATUSES = ["todo", "in_progress", "blocked", "done"]
 TASK_FIELDS = ["id", "project_id", "title", "stage", "target", "assignee",
-               "status", "priority", "due", "reagents", "notes", "created"]
+               "status", "priority", "due", "reagents", "notes", "created",
+               "design", "attachments"]
 
 
 class TeamStore:
@@ -41,35 +42,51 @@ class TeamStore:
         return m["initials"] if m else "—"
 
     # ---------- projects ----------
+    def _project_row(self, r) -> Dict:
+        p = dict(r)
+        p["members"] = json.loads(p.get("members") or "[]")
+        p["lead_name"] = self._name(p["lead"])
+        p["member_objs"] = [m for m in (self.member(mid) for mid in p["members"]) if m]
+        return p
+
     def projects(self) -> List[Dict]:
         out = []
         for r in self.conn.execute("SELECT * FROM projects ORDER BY id"):
-            p = dict(r)
+            p = self._project_row(r)
             tasks = self.tasks(project_id=p["id"])
             done = sum(1 for t in tasks if t["status"] == "done")
             p["task_count"] = len(tasks)
             p["done_count"] = done
             p["progress"] = round(100 * done / len(tasks)) if tasks else 0
-            p["lead_name"] = self._name(p["lead"])
             out.append(p)
         return out
 
     def project(self, pid: str) -> Optional[Dict]:
         r = self.conn.execute("SELECT * FROM projects WHERE id=?", (pid,)).fetchone()
-        if not r:
-            return None
-        p = dict(r); p["lead_name"] = self._name(p["lead"])
-        return p
+        return self._project_row(r) if r else None
+
+    def update_project(self, pid: str, fields: Dict) -> None:
+        allowed = {}
+        for k in ("name", "goal", "lead", "status", "members"):
+            if k in fields:
+                allowed[k] = json.dumps(fields[k]) if k == "members" and isinstance(fields[k], list) else fields[k]
+        if not allowed:
+            return
+        sets = ", ".join(f"{k}=?" for k in allowed)
+        self.conn.execute(f"UPDATE projects SET {sets} WHERE id=?", (*allowed.values(), pid))
+        self.conn.commit()
 
     def _next_project_id(self) -> str:
         rows = self.conn.execute("SELECT id FROM projects").fetchall()
         nums = [int(r[0].split("-")[-1]) for r in rows if r[0].split("-")[-1].isdigit()]
         return f"PRJ-{(max(nums)+1) if nums else 1:02d}"
 
-    def add_project(self, name: str, goal: str = "", lead: Optional[str] = None) -> str:
+    def add_project(self, name: str, goal: str = "", lead: Optional[str] = None,
+                    members: Optional[List[str]] = None) -> str:
         pid = self._next_project_id()
-        self.conn.execute("INSERT INTO projects (id,name,goal,status,lead,created) VALUES (?,?,?,?,?,?)",
-                          (pid, name, goal, "active", lead, date.today().isoformat()))
+        mem = json.dumps(members or ([lead] if lead else []))
+        self.conn.execute("INSERT INTO projects (id,name,goal,status,lead,members,created) VALUES (?,?,?,?,?,?,?)",
+                          (pid, name, goal, "active", lead, mem, date.today().isoformat()))
         self.conn.commit()
         return pid
 
@@ -77,6 +94,9 @@ class TeamStore:
     def _row(self, r) -> Dict:
         t = dict(r)
         t["reagents"] = json.loads(t.get("reagents") or "[]")
+        t["attachments"] = json.loads(t.get("attachments") or "[]")
+        d = t.get("design")
+        t["design"] = json.loads(d) if d and d not in ("null", "") else None
         t["assignee_name"] = self._name(t["assignee"])
         t["assignee_initials"] = self._initials(t["assignee"])
         return t
@@ -103,8 +123,11 @@ class TeamStore:
         item.setdefault("id", self._next_task_id())
         item.setdefault("created", date.today().isoformat())
         item.setdefault("status", "todo")
-        if isinstance(item.get("reagents"), list):
-            item["reagents"] = json.dumps(item["reagents"])
+        for k in ("reagents", "attachments"):
+            if isinstance(item.get(k), list):
+                item[k] = json.dumps(item[k])
+        if isinstance(item.get("design"), dict):
+            item["design"] = json.dumps(item["design"])
         cols = [c for c in TASK_FIELDS if c in item]
         self.conn.execute(f"INSERT OR REPLACE INTO tasks ({','.join(cols)}) VALUES ({','.join('?' for _ in cols)})",
                           tuple(item[c] for c in cols))
@@ -122,6 +145,16 @@ class TeamStore:
     def delete_task(self, tid: str) -> None:
         self.conn.execute("DELETE FROM tasks WHERE id=?", (tid,))
         self.conn.commit()
+
+    def add_attachment(self, tid: str, url: str) -> list:
+        t = self.get_task(tid)
+        if not t:
+            return []
+        atts = t.get("attachments") or []
+        atts.append(url)
+        self.conn.execute("UPDATE tasks SET attachments=? WHERE id=?", (json.dumps(atts), tid))
+        self.conn.commit()
+        return atts
 
     # ---------- orchestration ----------
     def readiness(self, task: Dict, inv: Optional[InventoryStore] = None) -> Dict:

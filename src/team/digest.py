@@ -83,10 +83,6 @@ def _narrative(f: Dict, project_id) -> str:
         parts.append(f"Prioritize '{f['ready_high'][0]['title']}' — high priority and all reagents in stock.")
     if f["unassigned"]:
         parts.append(f"{len(f['unassigned'])} task(s) still unassigned.")
-    if f["duplicates"]:
-        g = f["duplicates"][0]
-        parts.append(f"Possible duplicated effort on {g['target']} — coordinate "
-                     f"{', '.join(t['assignee_name'] for t in g['tasks'])}.")
     return " ".join(parts)
 
 
