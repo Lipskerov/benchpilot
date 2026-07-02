@@ -34,7 +34,8 @@ document.addEventListener("click", e => {
   eng.textContent = s.engine === "granite" ? "IBM Granite" : "Offline engine";
   eng.classList.toggle("offline", s.engine !== "granite");
   $("#examples").innerHTML = EXAMPLES.map(e => `<span class="ex">${esc(e)}</span>`).join("");
-  $$(".ex").forEach(x => x.onclick = () => { $("#q").value = x.textContent; ask(); });
+  $$("#examples .ex").forEach(x => x.onclick = () => { $("#q").value = x.textContent; ask(); });
+  $("#landingFoot").textContent = `Built with IBM Bob · ${s.papers} papers · ${s.trials} trials · ${s.inventory.total} reagents`;
   loadInventory();
 })();
 
@@ -753,3 +754,17 @@ function renderRoadmap(board) {
   }).join("") + `</div></details>`;
   return h;
 }
+
+// ===== Landing / search hero =====
+(function landing() {
+  const L = $("#landing");
+  const enter = q => { if (!q) return; L.classList.add("hidden"); show("discover"); $("#q").value = q; ask(); };
+  const go = () => enter($("#landingQ").value.trim());
+  $("#landingBtn").onclick = go;
+  $("#landingQ").addEventListener("keydown", e => { if (e.key === "Enter") go(); });
+  $("#landingExamples").innerHTML = EXAMPLES.slice(0, 3).map(e => `<span class="ex">${esc(e)}</span>`).join("");
+  $$("#landingExamples .ex").forEach(x => x.onclick = () => enter(x.textContent));
+  const brand = document.querySelector(".brand");
+  if (brand) brand.onclick = () => { L.classList.remove("hidden"); setTimeout(() => $("#landingQ").focus(), 100); };
+  setTimeout(() => $("#landingQ").focus(), 300);
+})();

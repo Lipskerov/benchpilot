@@ -18,9 +18,13 @@ data/chroma/
 # TRACK data/snapshot/*.jsonl (committed for reproducibility)
 !data/snapshot/*.jsonl
 
+# Generated static build (rebuilt from web-build/build_static.py)
+site/
+
 # Demo media — too large / binary for the repo
 demo/*.mp4
 demo/*.m4a
+demo/*.mov
 demo/*.wav
 demo/.rec/video/
 demo/.rec/node_modules/

@@ -367,3 +367,28 @@ select.mini:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--ring);ou
 .roadmap-wrap{margin:6px 0 8px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);padding:12px 16px;box-shadow:var(--shadow)}
 .roadmap-wrap summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--accent-ink);list-style:none}
 .roadmap-wrap summary::-webkit-details-marker{display:none}
+
+/* ===== Landing / search hero ===== */
+#landing{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(13,148,136,.10), transparent 60%),
+    radial-gradient(900px 500px at 100% 110%, rgba(8,145,178,.10), transparent 55%),
+    linear-gradient(180deg,#ffffff, #f4f6f8);
+  transition:opacity .45s ease, visibility .45s;}
+#landing.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.landing-inner{width:100%;max-width:760px;padding:0 28px;text-align:center;animation:fade .6s ease}
+.landing-logo{width:64px;height:64px;margin:0 auto 22px;border-radius:18px;background:var(--grad);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:34px;box-shadow:0 10px 30px var(--ring)}
+.landing-name{font-size:52px;font-weight:600;letter-spacing:-1.5px;margin:0 0 14px;
+  background:linear-gradient(135deg,#0f1216 40%,#0d9488);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.landing-vp{font-size:20px;line-height:1.5;color:var(--ink-soft);margin:0 auto 34px;max-width:620px}
+.landing-search{display:flex;gap:12px;max-width:680px;margin:0 auto 20px}
+.landing-search input{flex:1;padding:18px 22px;border:1px solid var(--line);border-radius:16px;background:#fff;
+  font:inherit;font-size:16px;color:var(--ink);outline:none;box-shadow:var(--shadow-lg);transition:border-color .15s,box-shadow .15s}
+.landing-search input:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--ring),var(--shadow-lg)}
+.landing-search button.primary{height:auto;padding:0 26px;border-radius:16px;font-size:15px}
+.landing-examples{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin-bottom:30px}
+.landing-examples .ex{background:#fff}
+.landing-foot{font-size:12.5px;color:var(--muted);font-family:"IBM Plex Mono",monospace}
+.brand{cursor:pointer}
+@media (max-width:640px){.landing-name{font-size:40px}.landing-vp{font-size:17px}.landing-search{flex-direction:column}}

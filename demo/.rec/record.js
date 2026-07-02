@@ -49,9 +49,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
     // ============ 2. DISCOVER ============
     await cap('1 · Discover', 'So let\'s just ask — in plain language — and let BenchPilot read the whole field for us.');
-    await page.locator('#q').click();
-    await page.locator('#q').type('How can immunotherapy help more triple-negative breast cancer patients respond to treatment?', { delay: 38 });
-    await sleep(700); await click('#askBtn');
+    await page.locator('#landingQ').click();
+    await page.locator('#landingQ').type('How can immunotherapy help more triple-negative breast cancer patients respond to treatment?', { delay: 38 });
+    await sleep(700); await click('#landingBtn');
     await page.locator('#discoverResults .target').first().waitFor({ timeout: 12000 }); await sleep(3000);
     await cap('1 · Discover', 'Grounded in <b>real PubMed papers and clinical trials</b> — with the actual molecular targets pulled out.');
     await page.evaluate(() => window.scrollTo({ top: 360, behavior: 'smooth' })); await sleep(3800);
