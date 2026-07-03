@@ -11,6 +11,7 @@ offline fallback so the app always works.
 """
 
 import json
+import sqlite3
 import sys
 from pathlib import Path
 from typing import List, Optional
@@ -72,6 +73,29 @@ class InvItem(BaseModel):
 
 
 # ---------- meta ----------
+@app.get("/api/corpus")
+def corpus(kind: str = "paper", q: Optional[str] = None, offset: int = 0, limit: int = 50):
+    conn = sqlite3.connect(str(ROOT / "benchpilot.db")); conn.row_factory = sqlite3.Row
+    like = f"%{q.lower()}%" if q else None
+    items = []
+    if kind == "paper":
+        where = " WHERE LOWER(title || ' ' || abstract) LIKE ?" if like else ""
+        params = [like] if like else []
+        total = conn.execute(f"SELECT COUNT(*) FROM papers{where}", params).fetchone()[0]
+        for r in conn.execute(f"SELECT pmid,title,abstract,journal,year FROM papers{where} ORDER BY year DESC, pmid LIMIT ? OFFSET ?", params + [limit, offset]):
+            items.append({"id": r["pmid"], "title": r["title"], "abstract": r["abstract"], "journal": r["journal"], "year": r["year"]})
+    else:
+        where = " WHERE LOWER(brief_title || ' ' || interventions || ' ' || conditions) LIKE ?" if like else ""
+        params = [like] if like else []
+        total = conn.execute(f"SELECT COUNT(*) FROM trials{where}", params).fetchone()[0]
+        for r in conn.execute(f"SELECT nct_id,brief_title,phase,status,sponsor,interventions,primary_outcomes FROM trials{where} ORDER BY nct_id DESC LIMIT ? OFFSET ?", params + [limit, offset]):
+            iv = " ".join(x.get("name", "") for x in json.loads(r["interventions"] or "[]"))
+            items.append({"id": r["nct_id"], "title": r["brief_title"], "phase": r["phase"], "status": r["status"],
+                          "sponsor": r["sponsor"], "interventions": iv, "primary_outcomes": json.loads(r["primary_outcomes"] or "[]")})
+    conn.close()
+    return {"items": items, "total": total, "offset": offset, "limit": limit}
+
+
 @app.get("/api/graph")
 def graph():
     f = ROOT / "data" / "snapshot" / "graph.json"
