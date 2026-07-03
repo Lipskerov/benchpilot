@@ -10,6 +10,7 @@ Reasoning runs on IBM Granite (watsonx) when configured, with a grounded
 offline fallback so the app always works.
 """
 
+import json
 import sys
 from pathlib import Path
 from typing import List, Optional
@@ -71,6 +72,12 @@ class InvItem(BaseModel):
 
 
 # ---------- meta ----------
+@app.get("/api/graph")
+def graph():
+    f = ROOT / "data" / "snapshot" / "graph.json"
+    return json.loads(f.read_text()) if f.exists() else {"nodes": [], "edges": [], "predictions": [], "emerging": [], "model": {}, "stats": {}}
+
+
 @app.get("/api/stats")
 def stats():
     idx = get_index()

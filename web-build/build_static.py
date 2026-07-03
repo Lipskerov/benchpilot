@@ -56,6 +56,9 @@ def main():
         shutil.copy(WEB / f, SITE / f)
     shutil.copytree(WEB / "uploads", SITE / "uploads")
     n = export_data(SITE / "data")
+    g = ROOT / "data" / "snapshot" / "graph.json"
+    if g.exists():
+        shutil.copy(g, SITE / "data" / "graph.json")
 
     html = (WEB / "index.html").read_text()
     html = html.replace('href="/styles.css"', 'href="styles.css"')

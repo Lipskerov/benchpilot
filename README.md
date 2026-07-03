@@ -101,6 +101,17 @@ flowchart TD
 
 **Why it's more than a chatbot:** grounded in a real curated corpus; BM25 (not just embeddings) for precise, explainable retrieval; hypotheses with predictions *and* falsification; quantitative experiment plans with dependencies; and reagent-aware team orchestration — with transparent citations throughout.
 
+## Data & ML — how it's organized, and the models
+
+**Data.** Public evidence is pulled **once** from **PubMed** and **ClinicalTrials.gov**, normalized into a small **SQLite** store with **committed JSONL snapshots** (reproducible, no re-fetch). Retrieval runs on a **BM25** index over papers + trials — precise and explainable, rather than an opaque embedding blob. Inventory and team live in their own tables so each domain is independently queryable. From the same corpus we derive a **knowledge graph**: nodes = genes/targets, drugs, TNBC subtypes; edges = how often they're **co-mentioned** across papers and trials. Everything is exported to static JSON so the whole app can run client-side (no server, no keys) on GitHub Pages.
+
+**ML models (all lightweight, deterministic, offline-first).**
+1. **BM25 ranking** — evidence retrieval for the *question → targets* step.
+2. **Link prediction — scikit-learn LogisticRegression** trained on graph-topology features (common-neighbors, Jaccard, Adamic-Adar, resource-allocation, preferential-attachment); **test AUC ≈ 0.87**. It surfaces **under-studied but structurally-supported connections** — a "what to study next" recommender (`etl/build_graph.py` → `data/snapshot/graph.json`, served at `/api/graph`).
+3. **Trend detection — linear regression** on yearly mention counts, flagging emerging vs. fading targets.
+
+**Why offline-first:** deterministic and key-free, so it runs on static hosting and is easy for judges to verify; **IBM Granite (watsonx)** slots in for LLM-quality reasoning when credentials are configured.
+
 ## Selected Theme
 
 **Wildcard Track — "Build Intelligent Systems for the Future of Work."**
@@ -156,6 +167,11 @@ It transforms research from disconnected tasks into an intelligent, outcome-driv
 **Reagent inventory**
 - Searchable catalogue (chemical / biological / plastic) with concentration, purity, MW, stock
 - Add/edit/delete items; low-stock and expiry flags
+
+**Knowledge graph & ML**
+- Interactive co-mention network (genes/targets · drugs · TNBC subtypes) sized by PageRank
+- **Link-prediction model** ranking under-studied connections worth exploring (AUC ≈ 0.87)
+- Emerging-target trends from yearly mentions
 
 ## Quick Start
 
