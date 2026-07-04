@@ -1,102 +1,94 @@
 # BenchPilot
 
-**An evidence-grounded AI co-worker for the cancer-biology lab — from a research question to a staffed, scheduled project, in minutes.**
+**An evidence-grounded AI co-worker for the cancer-biology lab — it takes a research idea from question to a staffed, scheduled experimental plan in about an hour instead of weeks.**
 
-*Built with IBM Bob · IBM AI Builders Challenge — Wildcard Track (Build Intelligent Systems for the Future of Work)*
+*Built with IBM Bob · IBM AI Builders Challenge — Wildcard Track: Build Intelligent Systems for the Future of Work*
 
----
-
-## 🚀 Live demo & video
-
-- **🌐 Live app:** https://lipskerov.github.io/benchpilot/  *(runs fully in the browser — no server, no keys)*
+- **🌐 Live app:** https://lipskerov.github.io/benchpilot/ *(runs fully in the browser — no server, no API keys)*
 - **🎥 Demo video (≤3 min):** https://youtu.be/EWKyWWj4YKQ
 - **📦 Repository:** https://github.com/Lipskerov/benchpilot
 
 ---
 
-## ✅ Challenge submission (Wildcard — Future of Work)
+## Why I built this
+
+I'm a molecular biologist. I know the TNBC (triple-negative breast cancer) field, and I know exactly how a project starts in a real lab — because I do it, and I watch my colleagues do it.
+
+Here's the uncomfortable truth: **from having a research idea to actually starting the first experiment at the bench, it takes us about three weeks.** Not because the science is hard yet — but because of everything *around* the science:
+
+- ~3–5 days screening the literature and trials to work out what's worth doing (and what's already been done),
+- ~2–3 days turning that into a defensible hypothesis and experimental design,
+- ~2–3 days writing protocols with the right cell lines, controls, and reagents,
+- ~1–2 days cross-checking reagent stock and building an order list,
+- ~1–2 days planning the work and assigning it across the team.
+
+That's ~2–3 weeks of scattered desk-work before a single pipette moves. It's slow, it's repetitive, it's easy to duplicate effort, and the knowledge lives in people's heads. **Every "AI co-worker" I could find helps with the office inbox — none of them help at the bench.**
+
+So I built the tool I actually needed for my own work and for our lab's performance. BenchPilot compresses that entire desk-work phase from **~3 weeks into ~1 hour**, grounded in real evidence rather than a chatbot's guess.
 
 ---
 
-## Problem
+## How I used it — a real example (immunotherapy in TNBC)
 
-Every "AI co-worker" targets the office inbox. **None target the science bench.**
+I opened BenchPilot and typed one plain question:
+> *"How can immunotherapy improve treatment response in triple-negative breast cancer?"*
 
-A triple-negative breast cancer (TNBC) research lab drowns in evidence — thousands of PubMed papers and hundreds of clinical trials — yet the highest-value knowledge work stays slow, tacit, and disconnected:
+**1. Literature, in seconds instead of days.** It searched all **785 papers + 1,468 trials** and gave me a grounded synthesis with citations, then ranked the real molecular targets by evidence. **PD-L1 came out on top (15 papers, 13 trials).** Doing that triage by hand — skimming ~2,250 documents to map the immunotherapy landscape — normally costs me the better part of a week.
 
-1. **What should we study next** (and hasn't it already been done)?
-2. **Design the experiments** to answer it.
-3. **Draft the protocols** with precise methods and materials.
-4. **Check reagent stock** and order what's missing.
-5. **Coordinate the team** — who runs what, in what order, and what's blocked.
+**2. A hypothesis I could defend.** It proposed three competing, testable hypotheses in plain language. I picked the strongest: *adding a PD-L1 checkpoint blocker to chemotherapy improves response*, with a quantitative prediction and a clear falsification condition.
 
-Today these steps live in separate tools and people's heads. BenchPilot turns them into one intelligent, outcome-driven system.
+**3. A full experiment plan with a timeline.** In one click it laid out a **5-work-package plan across 9 weeks** — Western blot for PD-L1 expression, IF microscopy, a dose-response assay, a chemo + immunotherapy combination, and analysis — each with the right cell lines (MDA-MB-231/468, MCF-10A control), treatment groups, replicates, and reagents. Two experiments run in parallel, the rest in sequence.
 
-## Solution
+**4. Reagents reconciled instantly.** It drafted the protocol and checked it against my lab's live inventory, **flagged that olaparib was out of stock**, and produced an order list. That cross-check is usually an afternoon of tab-switching.
 
-**BenchPilot** is an AI co-worker for a research lab that closes the full **bench-to-decision** loop and coordinates the team around it:
+**5. The whole thing became a staffed project.** One click created the project, auto-assigned my team by expertise and workload, and put it on a live board with an AI stand-up that reads status + reagent-readiness.
 
-1. **Ask a scientific question** in plain language → grounded search over **785 PubMed papers + 1,468 clinical trials**.
-2. **Discover the real molecular targets** in the evidence, with cited papers and trials (PMIDs, NCT IDs).
-3. **Generate competing, testable hypotheses** — plain-language summaries, quantitative predictions, and falsification criteria.
-4. **Get a work-package experiment plan with a timeline** (sequential + parallel experiments, test groups, cell lines, reagents).
-5. **Draft a protocol** and **reconcile it against live reagent inventory** → flags exactly what to order.
-6. **Spin the plan into a staffed project** — auto-assign the team, drag-and-drop board, per-project WP roadmap.
-7. **AI stand-up + orchestration** — reads live status, reagent-readiness, and workload to say what to do next and who should do it.
+**6. And it gave me an idea I didn't have.** The knowledge graph's link-prediction model flagged **sacituzumab × PARP1** and **durvalumab × sacituzumab** as *under-studied but structurally-supported* combinations worth exploring (model AUC 0.87). I hadn't prioritized either — that's the kind of connection I'd normally only stumble on months later.
 
-The reasoning layer runs on **IBM Granite (watsonx)** when configured, with a **grounded offline engine** (BM25 retrieval + templated reasoning) so it works with zero keys. Every recommendation is defensible, not guessed.
+**Net result:** what usually takes me ~2–3 weeks of setup took **about an hour**, end to end.
 
+---
 
+## Impact & metrics
 
-## Results & Impact
+Measured system metrics (real, reproducible):
 
-**Quantified time savings** (based on typical TNBC lab workflows):
+| Metric | Value |
+|---|---|
+| Evidence base indexed | **2,253 documents** — 785 PubMed papers (2019–2026) + 1,468 ClinicalTrials.gov trials |
+| Retrieval | **BM25**, sub-second, fully offline / in-browser |
+| Knowledge graph | **62 entities · 286 co-mention edges · 5 communities** (genes/targets, drugs, subtypes) |
+| Link-prediction model | **scikit-learn LogisticRegression, test AUC ≈ 0.87** (5 graph-topology features) |
+| Trend detection | linear regression over yearly mentions (emerging-target flagging) |
+| Reagent inventory | 96 items, protocol → live-stock reconciliation → order list |
+| Deployment | ~2 MB static app, loads in the browser, no backend, no keys |
 
-| Task | Manual approach | With BenchPilot | Time saved |
-|------|----------------|-----------------|------------|
-| Literature review | 8 hours | 15 minutes | **97% faster** |
-| Hypothesis generation | 2-3 days | 5 minutes | **99% faster** |
-| Experiment design | 1-2 days | 10 minutes | **99% faster** |
-| Protocol drafting | 2 days | 30 minutes | **98% faster** |
-| Reagent inventory check | 1-2 hours | 2 minutes | **98% faster** |
-| Team coordination | 3-4 hours/week | 10 minutes/week | **95% faster** |
+Time impact (estimated from my own lab workflow — not a controlled study):
 
-**Prevents redundant work:**
-- **40% of planned experiments** are flagged as already done (based on evidence corpus analysis)
-- **Duplicate-effort detection** across team members saves ~15 hours/month
-- **Reagent-aware orchestration** prevents blocked experiments (no more "we're out of X")
+| Task | Manual | With BenchPilot |
+|---|---|---|
+| Literature/trial triage → candidate targets | ~3–5 days | **seconds** |
+| Idea → staffed, scheduled experimental plan (lit + hypothesis + design + protocol + reagents + assignment) | **~2–3 weeks** | **~1 hour** |
+| Reagent reconciliation + order list | ~1–2 hours | **seconds** |
 
-**Accelerates the research cycle:**
-- From question → staffed project: **8 weeks → 1 hour**
-- Evidence-to-decision time: **months → minutes**
-- Team coordination overhead: **~20 hours/month → ~2 hours/month**
+---
 
+## What it does (the solution)
+
+BenchPilot closes the full **bench-to-decision** loop and coordinates the team around it:
+
+1. **Ask a question** → grounded search over 785 papers + 1,468 trials, with cited synthesis and ranked targets.
+2. **Generate hypotheses** → plain-language, testable, with predictions and falsification criteria.
+3. **Get an experiment plan + timeline** → work packages (parallel + sequential), cell lines, test groups, reagents.
+4. **Draft a protocol + check inventory** → flags exactly what to order.
+5. **Spin up a staffed project** → auto-assign the team, drag-and-drop board, per-project roadmap.
+6. **AI stand-up** → reads status, reagent-readiness, and workload to say what to do next and who should do it.
+7. **Knowledge graph + ML** → co-mention network with a link-prediction model recommending under-studied connections.
+8. **Browse the full evidence base** → searchable Papers & Trials library.
+
+Reasoning runs on **IBM Granite (watsonx)** when configured, with a grounded **offline engine** (BM25 + templated reasoning) so it works with zero keys.
 
 ## AI Approach & Architecture
-
-
-## Why BenchPilot wins vs. alternatives
-
-| Feature | Manual PubMed + spreadsheets | Generic LLM (ChatGPT/Claude) | Lab software (Benchling/LabArchives) | **BenchPilot** |
-|---------|------------------------------|------------------------------|---------------------------------------|----------------|
-| **Evidence grounding** | Manual search, no synthesis | ❌ Hallucinates citations | ❌ No literature integration | ✅ Real PMIDs/NCT IDs, BM25 retrieval |
-| **TNBC-specific** | ❌ Generic search | ❌ Generic knowledge | ❌ Generic templates | ✅ 785 papers + 1,468 trials curated corpus |
-| **Hypothesis generation** | ❌ Manual, weeks | ⚠️ Ungrounded, no citations | ❌ Not supported | ✅ Evidence-grounded, testable, falsifiable |
-| **Experiment design** | ❌ Manual, days | ⚠️ Generic suggestions | ⚠️ Templates only | ✅ Work-package plans with timelines |
-| **Protocol generation** | ❌ Manual, days | ⚠️ Generic protocols | ⚠️ Templates only | ✅ Detailed, with reagent reconciliation |
-| **Reagent inventory** | ❌ Separate system | ❌ Not integrated | ⚠️ Inventory only | ✅ Live stock check + order list |
-| **Team coordination** | ❌ Email + meetings | ❌ Not supported | ⚠️ Basic task tracking | ✅ AI stand-up, workload-aware assignment |
-| **Redundancy detection** | ❌ Manual review | ❌ Not supported | ❌ Not supported | ✅ Flags already-done experiments |
-| **Knowledge graph** | ❌ Not available | ❌ Not available | ❌ Not available | ✅ Interactive network + ML recommendations |
-| **Offline mode** | ✅ Works offline | ❌ Requires API | ⚠️ Cloud-dependent | ✅ Full offline engine (BM25 + templates) |
-| **Cost** | Free (time-expensive) | $20-200/month | $50-500/user/month | **Free + optional watsonx** |
-
-**Key differentiators:**
-- **Only BenchPilot** grounds every answer in a real, curated disease-specific corpus with mandatory citations
-- **Only BenchPilot** closes the full loop: question → evidence → hypothesis → design → protocol → inventory → team
-- **Only BenchPilot** orchestrates the team with reagent-aware task management and AI stand-up
-
-
 
 ```mermaid
 flowchart TD
@@ -104,209 +96,100 @@ flowchart TD
         P[PubMed E-utilities<br/>785 papers, 2019-2026]
         A[ClinicalTrials.gov v2<br/>1,468 trials]
         I[Lab inventory<br/>96 reagents]
-        T[Team & projects<br/>members, tasks, workload]
+        T[Team & projects]
     end
     P --> ETL[ETL & normalization]
     A --> ETL
     ETL --> DB[(SQLite + BM25 index)]
+    ETL --> KG[Knowledge graph<br/>+ link-prediction ML]
     I --> INV[(Inventory store)]
     T --> TEAM[(Team store)]
 
     Q[Scientific question] --> RET[BM25 retrieval]
     DB --> RET
-    RET --> GRAN[IBM Granite reasoning<br/>watsonx.ai + offline fallback]
-    GRAN --> SYN[Evidence synthesis & targets]
-    SYN --> HYP[Hypotheses]
-    HYP --> PLAN[Work-package plan + timeline]
-    PLAN --> PROT[Protocol generation]
-    PROT --> MATCH[Inventory matcher]
+    RET --> GRAN[IBM Granite reasoning<br/>watsonx + offline fallback]
+    GRAN --> SYN[Synthesis & targets]
+    SYN --> HYP[Hypotheses] --> PLAN[Experiment plan + timeline]
+    PLAN --> PROT[Protocol] --> MATCH[Inventory matcher] --> ORDER[Order list]
     INV --> MATCH
-    MATCH --> ORDER[Order list]
-
     PLAN --> PROJ[Project + tasks]
-    TEAM --> PROJ
-    PROJ --> STAND[AI stand-up<br/>status + reagent-readiness]
-    PROJ --> ASSIGN[Task assignment<br/>focus + workload]
-
-    SYN --> UI[Web UI / FastAPI]
-    HYP --> UI
+    TEAM --> PROJ --> STAND[AI stand-up + assignment]
+    KG --> UI[Web UI / FastAPI]
+    SYN --> UI
     PLAN --> UI
     ORDER --> UI
     STAND --> UI
-    ASSIGN --> UI
 ```
-
-**Core components**
 
 | Module | Technology | Purpose |
 |---|---|---|
 | Data ingestion | PubMed E-utilities · ClinicalTrials.gov API v2 | Real TNBC papers + trials |
-| Knowledge base | SQLite + **BM25** retrieval | Precise, explainable evidence matching |
-| Reasoning | **IBM Granite (watsonx.ai)** + grounded offline fallback | Synthesis, targets, hypotheses, experiment plans, protocols |
-| Inventory | SQLite + fuzzy matcher | Reconcile protocol materials vs live stock → order list |
-| Team & projects | SQLite + AI digest | Board, WP roadmap, AI stand-up, workload-aware assignment |
-| Backend | **FastAPI** | REST API |
-| Frontend | Vanilla JS + HTML/CSS | Landing/search + workflow UI |
-| Static build | `web-build/build_static.py` | Ships the whole app + data as static files for GitHub Pages (client-side engine) |
-
-
-## Scalability & broader applicability
-
-**BenchPilot is a framework, not just a TNBC app.** The architecture is disease-agnostic:
-
-**Swap the corpus → instant domain adaptation:**
-- Replace `etl/fetch_pubmed.py` query with any disease/topic (e.g., "Alzheimer's disease", "Type 2 diabetes", "Parkinson's")
-- Run `python etl/fetch_pubmed.py && python etl/fetch_trials.py && python etl/build_db.py`
-- The entire system (BM25 retrieval, reasoning, knowledge graph, ML) adapts automatically
-
-**Already architected for multi-lab deployment:**
-- SQLite → PostgreSQL (one-line change in connection string)
-- Add authentication (FastAPI supports OAuth2/JWT out of the box)
-- Multi-tenant: one database per lab, or shared with lab_id foreign keys
-
-**Proven extensibility:**
-- **TNBC** (current): 785 papers, 1,468 trials → full workflow in 1 hour
-- **Alzheimer's** (tested): 12,000+ papers → same workflow, same speed
-- **Any rare disease** with <100 papers → still works (offline engine gracefully degrades)
-
-**Why this matters for "Future of Work":**
-- Not a one-off solution for one lab
-- A **platform** for evidence-grounded decision support in any research domain
-- Demonstrates AI as a co-worker that adapts to the domain, not the other way around
-
-
-
-**Why it's more than a chatbot:** grounded in a real curated corpus; BM25 (not just embeddings) for precise, explainable retrieval; hypotheses with predictions *and* falsification; quantitative experiment plans with dependencies; and reagent-aware team orchestration — with transparent citations throughout.
+| Knowledge base | SQLite + **BM25** | Precise, explainable retrieval |
+| Reasoning | **IBM Granite (watsonx)** + offline fallback | Synthesis, hypotheses, plans, protocols |
+| Knowledge graph | networkx + **scikit-learn** | Co-mention network + link-prediction ML |
+| Inventory / Team | SQLite + AI digest | Order list · board · stand-up · assignment |
+| Backend | **FastAPI** (interactive docs at `/docs`) | REST API |
+| Frontend / hosting | Vanilla JS + static build | Runs client-side on GitHub Pages, mobile-responsive |
 
 ## Data & ML — how it's organized, and the models
 
-**Data.** Public evidence is pulled **once** from **PubMed** and **ClinicalTrials.gov**, normalized into a small **SQLite** store with **committed JSONL snapshots** (reproducible, no re-fetch). Retrieval runs on a **BM25** index over papers + trials — precise and explainable, rather than an opaque embedding blob. Inventory and team live in their own tables so each domain is independently queryable. From the same corpus we derive a **knowledge graph**: nodes = genes/targets, drugs, TNBC subtypes; edges = how often they're **co-mentioned** across papers and trials. Everything is exported to static JSON so the whole app can run client-side (no server, no keys) on GitHub Pages.
+**Data.** Public evidence is pulled **once** from PubMed + ClinicalTrials.gov and normalized into a small **SQLite** store with **committed JSONL snapshots** (reproducible, no re-fetch). Retrieval uses a **BM25** index over papers + trials — precise and explainable, not an opaque embedding blob. Inventory and team live in their own tables. From the same corpus we derive a **knowledge graph** (nodes = genes/targets, drugs, subtypes; edges = co-mention counts). Everything exports to static JSON so the whole app runs client-side.
 
-**ML models (all lightweight, deterministic, offline-first).**
-1. **BM25 ranking** — evidence retrieval for the *question → targets* step.
-2. **Link prediction — scikit-learn LogisticRegression** trained on graph-topology features (common-neighbors, Jaccard, Adamic-Adar, resource-allocation, preferential-attachment); **test AUC ≈ 0.87**. It surfaces **under-studied but structurally-supported connections** — a "what to study next" recommender (`etl/build_graph.py` → `data/snapshot/graph.json`, served at `/api/graph`).
-3. **Trend detection — linear regression** on yearly mention counts, flagging emerging vs. fading targets.
+**ML models (lightweight, deterministic, offline-first).**
+1. **BM25 ranking** — evidence retrieval for *question → targets*.
+2. **Link prediction — scikit-learn LogisticRegression** on graph-topology features (common-neighbors, Jaccard, Adamic-Adar, resource-allocation, preferential-attachment); **test AUC ≈ 0.87** — recommends under-studied connections (`etl/build_graph.py` → `data/snapshot/graph.json` → `/api/graph`).
+3. **Trend detection — linear regression** on yearly mentions, flagging emerging targets.
 
-**Why offline-first:** deterministic and key-free, so it runs on static hosting and is easy for judges to verify; **IBM Granite (watsonx)** slots in for LLM-quality reasoning when credentials are configured.
+**Why offline-first:** deterministic and key-free, so it runs on static hosting and is trivial to verify; **IBM Granite (watsonx)** slots in for LLM-quality reasoning when configured.
 
-## Selected Theme
+## What makes it different
 
-**Wildcard Track — "Build Intelligent Systems for the Future of Work."**
+| | Manual workflow | Generic LLM (e.g. ChatGPT) | Generic lab software | **BenchPilot** |
+|---|---|---|---|---|
+| Grounded in real papers + trials | ✅ (slow) | ❌ (can hallucinate) | ❌ | ✅ |
+| Transparent citations (PMIDs/NCTs) | ✅ | ⚠️ | ❌ | ✅ |
+| End-to-end: question → experiments → team | ❌ | ❌ | ❌ | ✅ |
+| Reagent-aware (checks stock, order list) | manual | ❌ | ⚠️ | ✅ |
+| Team orchestration + AI stand-up | manual | ❌ | ⚠️ | ✅ |
+| ML that recommends *what to study next* | ❌ | ❌ | ❌ | ✅ (AUC 0.87) |
+| Runs offline, no keys | — | ❌ | ⚠️ | ✅ |
+
+## Selected Theme — Future of Work
 
 BenchPilot is an **AI co-worker + project-planning assistant + decision-intelligence + workflow-orchestration** system for scientific research:
+- **Reduces repetitive work** — automates literature/trial triage, experiment planning, protocol drafting, reagent checks.
+- **Improves decision-making** — evidence-grounded hypotheses, an ML "what to study next" recommender, and an AI stand-up that surfaces blockers and priorities.
+- **Helps teams achieve outcomes faster** — turns a question into a staffed, scheduled project with a timeline and live board.
 
-- **Reduces repetitive work** — automates literature/trial scanning, experiment planning, protocol drafting, and reagent checks.
-- **Improves decision-making** — evidence-grounded hypotheses, gap-aware suggestions, and an AI stand-up that surfaces blockers and priorities.
-- **Helps teams achieve outcomes faster** — turns a question into a staffed, scheduled project with a timeline and a live board.
-
-It transforms research from disconnected tasks into an intelligent, outcome-driven system.
+It turns research from disconnected tasks into an intelligent, outcome-driven system.
 
 ## How IBM Bob Was Used
 
-**IBM Bob was the primary development tool for BenchPilot** — used to plan, build, test, and version-control the project through **spec-driven development**.
+**IBM Bob was the primary development tool** — used to plan, build, test, and version-control BenchPilot through **spec-driven development**:
+1. **Spec first** — `PROJECT-MAP.md`, `SPEC.md`, `INVENTORY-SPEC.md` as precise specs with acceptance criteria.
+2. **Ask mode** to explore, **Plan mode** to plan each phase (ETL → retrieval → reasoning → inventory → team → knowledge graph → UI), **Build mode** to implement against the spec.
+3. **GitHub MCP** (`.bob/mcp.json`) so **every commit and push went through Bob** — see the Bob-authored history (`git log`): scaffolding & specs → ETL → BM25 → V2 FastAPI app → V3 team layer → V4 hypotheses/plan/board → knowledge graph + link-prediction ML → Papers & Trials browser.
+4. **Credit-conscious:** a strong spec minimized re-prompts; manual testing between sessions conserved Bobcoins for the high-leverage generative work.
 
-**Workflow**
-1. **Spec first.** Wrote `PROJECT-MAP.md`, `SPEC.md`, and `INVENTORY-SPEC.md` as the source of truth — precise feature specs with acceptance criteria — so Bob had unambiguous requirements.
-2. **Ask mode** to explore the codebase and scope each phase.
-3. **Plan mode** to generate an implementation plan per phase (ETL → retrieval → reasoning → inventory → team → UI).
-4. **Build mode** to implement each feature against the spec, one at a time.
-5. **GitHub integration** — Bob's GitHub MCP (`.bob/mcp.json`) was used so **every commit and push was done through Bob**, giving a Bob-authored version history.
-6. **Review** with Bob before submission to catch gaps.
+## Scalability
 
-**Bob-authored commit trail** (see `git log`):
-- `chore: project scaffolding and specs`
-- `feat(etl): PubMed + ClinicalTrials.gov TNBC fetchers`
-- `feat(db): normalize + build BM25 index`
-- `feat(app): grounded TNBC Q&A with citations`
-- `feat(inventory): protocols + live-inventory check with order list`
-- `feat: BenchPilot V2 — FastAPI app, grounded retrieval, Granite reasoning, protocol drafting, inventory order flagging`
-- `feat: BenchPilot V3 — team collaboration (board, AI stand-up, task assignment, reagent-aware orchestration)`
-- `feat: BenchPilot V4 — hypotheses + experiment plan/timeline, project editor + drag-drop board, WP roadmap, experiment design + protocol photos`
-- `feat: landing/search main page + static GitHub Pages build`
+The pipeline is **disease-agnostic by design** — nothing in the reasoning is hard-coded to TNBC except a curated entity lexicon. Point the ETL at a different condition, rebuild, and the same workflow (retrieval → hypotheses → plan → protocol → inventory → team → knowledge graph) applies. The offline static build serves many concurrent users for free (CDN), and swapping the offline engine for **IBM Granite (watsonx)** upgrades reasoning quality without changing the architecture. A multi-lab deployment would add a shared database + auth.
 
-**Credit-conscious approach:** a strong spec up front minimized re-prompts; one Plan-mode call per phase; and manual testing/config between Bob sessions conserved Bobcoins for the high-leverage generative work (ETL, reasoning engine, UI).
-
-## Features
-
-**Bench-to-decision workflow**
-- Landing/search main page → grounded evidence synthesis with citations
-- Target extraction ranked by real evidence
-- Competing hypotheses (plain-language, prediction, falsification, confidence)
-- Work-package experiment plan with a **Gantt timeline** (parallel + sequential)
-- Protocol drafting reconciled against **live reagent inventory** → order list (CSV)
-
-**Team & orchestration**
-- Projects with drag-and-drop **Kanban board** and a per-project **WP roadmap**
-- **AI stand-up** (status, reagent-readiness, blockers, priorities)
-- Workload-aware **task assignment** + project editor (assign the team, adjust tasks)
-- Experimental design on tasks (test groups, cell lines, replicates) + **protocol photos** (Western blot, IF microscopy, plate maps)
-
-**Reagent inventory**
-- Searchable catalogue (chemical / biological / plastic) with concentration, purity, MW, stock
-- Add/edit/delete items; low-stock and expiry flags
-
-**Knowledge graph & ML**
-- Interactive co-mention network (genes/targets · drugs · TNBC subtypes) sized by PageRank
-- **Link-prediction model** ranking under-studied connections worth exploring (AUC ≈ 0.87)
-- Emerging-target trends from yearly mentions
-
-## Quick Start
+## Run it
 
 ```bash
-git clone https://github.com/Lipskerov/benchpilot.git
-cd benchpilot
+git clone https://github.com/Lipskerov/benchpilot.git && cd benchpilot
 pip install -r requirements.txt
-
-# Run the app (offline engine — no keys needed)
-python -m uvicorn api.main:app --reload
-# open http://127.0.0.1:8000
+python -m uvicorn api.main:app --reload    # http://127.0.0.1:8000 · API docs at /docs
 ```
+Optional real Granite: `cp .env.example .env` and set `WATSONX_API_KEY` / `WATSONX_PROJECT_ID`.
+Rebuild data: `python etl/fetch_pubmed.py && python etl/fetch_trials.py && python etl/build_db.py && python etl/gen_inventory.py && python etl/gen_team.py && python etl/gen_demo_images.py && python etl/build_graph.py`
+Static build (GitHub Pages): `python web-build/build_static.py` → deploy `./site/`.
 
-**Optional — real IBM Granite (watsonx):** `cp .env.example .env` and fill `WATSONX_API_KEY`, `WATSONX_PROJECT_ID`, `WATSONX_URL`, `GRANITE_MODEL_ID`. The app auto-uses the offline engine if keys are absent.
+## Tech stack
 
-**Rebuild the data (optional):**
-```bash
-python etl/fetch_pubmed.py && python etl/fetch_trials.py && python etl/build_db.py
-python etl/gen_inventory.py && python etl/gen_team.py && python etl/gen_demo_images.py
-```
-
-**Build the static site (for GitHub Pages):**
-```bash
-python web-build/build_static.py      # → ./site/  (deploy this folder)
-```
-
-**Produce the demo video (optional):** Playwright recorder in `demo/.rec/` (`make.sh`), narration in `demo/NARRATION.md`, voice-over via `demo/add-voiceover.sh`. Generated videos are gitignored.
-
-## Project Structure
-
-```
-benchpilot/
-├── README.md · PROJECT-MAP.md · SPEC.md · INVENTORY-SPEC.md
-├── .bob/mcp.json               # Bob GitHub-MCP config (proof of Bob usage)
-├── api/main.py                 # FastAPI backend (REST API)
-├── web/                        # Frontend (index.html, app.js, styles.css)
-│   ├── static-backend.js       # client-side API for the static GitHub Pages build
-│   └── uploads/                # protocol images (Western blot, IF, plate map)
-├── web-build/build_static.py   # builds ./site/ for GitHub Pages
-├── etl/                        # PubMed + ClinicalTrials.gov ETL, inventory/team/image generators
-├── src/
-│   ├── llm/                    # granite.py (watsonx) · reasoning.py (targets/hypotheses/plan)
-│   ├── memory/retrieval.py     # BM25
-│   ├── protocols/generate.py   # protocol templates
-│   ├── inventory/              # store.py · match.py
-│   └── team/                   # store.py · digest.py (AI stand-up + assignment)
-├── data/snapshot/*.jsonl       # committed TNBC corpus + inventory + team
-└── requirements.txt
-```
-
-## Technology Stack
-
-Python 3.11 · FastAPI · Vanilla JS/HTML/CSS · SQLite · **BM25** retrieval · **IBM Granite via watsonx.ai** (offline fallback) · PubMed E-utilities · ClinicalTrials.gov API v2 · **IBM Bob** (spec-driven development) · Playwright + ffmpeg (demo).
-
-## Acknowledgments
-
-Built for the **IBM AI Builders Challenge** (Wildcard Track), developed with **IBM Bob**. Data from **PubMed** (NCBI) and **ClinicalTrials.gov**; reasoning powered by **IBM Granite** via watsonx.ai.
+Python 3.11 · FastAPI · Vanilla JS/HTML/CSS (mobile-responsive) · SQLite · **BM25** · **scikit-learn** + networkx · **IBM Granite (watsonx)** + offline fallback · PubMed E-utilities · ClinicalTrials.gov API v2 · **IBM Bob** (spec-driven development).
 
 ---
 
-**Repository:** https://github.com/Lipskerov/benchpilot · **Contact:** Fedor Lipskerov · License: MIT
+**Repository:** https://github.com/Lipskerov/benchpilot · **Author:** Fedor Lipskerov (molecular biologist) · License: MIT
