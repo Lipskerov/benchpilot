@@ -32,7 +32,39 @@ from src.inventory.match import check_protocol, order_list
 from src.team.store import TeamStore
 from src.team import digest
 
-app = FastAPI(title="BenchPilot API", version="2.0")
+app = FastAPI(
+    title="BenchPilot API",
+    version="4.0",
+    description="""
+**BenchPilot** — Evidence-grounded AI co-worker for cancer research labs.
+
+Complete bench-to-decision workflow:
+- 🔍 Search 785 PubMed papers + 1,468 clinical trials
+- 🎯 Extract molecular targets with citations
+- 💡 Generate testable hypotheses
+- 🧪 Design experiments with timelines
+- 📋 Draft protocols with reagent reconciliation
+- 👥 Coordinate team with AI stand-up
+- 📊 Knowledge graph + ML recommendations
+
+Built with IBM Granite (watsonx) + offline fallback engine.
+    """,
+    contact={
+        "name": "Fedor Lipskerov",
+        "url": "https://github.com/Lipskerov/benchpilot",
+    },
+    license_info={
+        "name": "MIT",
+        "url": "https://opensource.org/licenses/MIT",
+    },
+    openapi_tags=[
+        {"name": "discovery", "description": "Evidence search and target extraction"},
+        {"name": "design", "description": "Hypothesis generation and experiment design"},
+        {"name": "protocol", "description": "Protocol generation and reagent management"},
+        {"name": "team", "description": "Project and team coordination"},
+        {"name": "evidence", "description": "Knowledge graph and corpus browser"},
+    ]
+)
 WEB = ROOT / "web"
 
 

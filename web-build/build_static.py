@@ -60,11 +60,16 @@ def main():
     if g.exists():
         shutil.copy(g, SITE / "data" / "graph.json")
 
+    import hashlib
+    ver = hashlib.md5(b"".join((WEB / f).read_bytes() for f in ["app.js", "styles.css", "static-backend.js"])).hexdigest()[:8]
     html = (WEB / "index.html").read_text()
     html = html.replace('href="/styles.css"', 'href="styles.css"')
-    # load static backend before the app, and make app.js relative
     html = html.replace('<script src="/app.js"></script>',
                         '<script src="static-backend.js"></script>\n<script src="app.js"></script>')
+    # cache-busting: version the code assets so browsers always fetch the latest
+    html = html.replace('href="styles.css"', f'href="styles.css?v={ver}"')
+    html = html.replace('src="static-backend.js"', f'src="static-backend.js?v={ver}"')
+    html = html.replace('src="app.js"', f'src="app.js?v={ver}"')
     (SITE / "index.html").write_text(html)
     # add a .nojekyll so GitHub Pages serves files as-is
     (SITE / ".nojekyll").write_text("")
