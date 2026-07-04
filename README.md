@@ -92,33 +92,69 @@ Reasoning runs on **IBM Granite (watsonx)** when configured, with a grounded **o
 
 ```mermaid
 flowchart TD
-    subgraph Sources["Real public data (TNBC)"]
+    subgraph DATA["1 · Real public data"]
         P[PubMed E-utilities<br/>785 papers, 2019-2026]
         A[ClinicalTrials.gov v2<br/>1,468 trials]
         I[Lab inventory<br/>96 reagents]
         T[Team & projects]
     end
+
+    subgraph STORE["2 · Stores & ML models"]
+        DB[(SQLite + BM25 index)]
+        KG[Knowledge graph<br/>networkx · 62 nodes / 286 edges]
+        ML[Link-prediction ML<br/>LogisticRegression · AUC 0.87]
+        TR[Emerging-target trends<br/>linear regression]
+        INV[(Inventory store)]
+        TEAM[(Team store)]
+    end
     P --> ETL[ETL & normalization]
     A --> ETL
-    ETL --> DB[(SQLite + BM25 index)]
-    ETL --> KG[Knowledge graph<br/>+ link-prediction ML]
-    I --> INV[(Inventory store)]
-    T --> TEAM[(Team store)]
+    ETL --> DB
+    DB --> KG --> ML
+    KG --> TR
+    I --> INV
+    T --> TEAM
 
-    Q[Scientific question] --> RET[BM25 retrieval]
-    DB --> RET
-    RET --> GRAN[IBM Granite reasoning<br/>watsonx + offline fallback]
-    GRAN --> SYN[Synthesis & targets]
-    SYN --> HYP[Hypotheses] --> PLAN[Experiment plan + timeline]
-    PLAN --> PROT[Protocol] --> MATCH[Inventory matcher] --> ORDER[Order list]
+    subgraph REASON["3 · Reasoning"]
+        RET[BM25 retrieval]
+        GRAN[IBM Granite watsonx<br/>+ grounded offline engine]
+    end
+    Q[Scientific question] --> RET
+    DB --> RET --> GRAN
+
+    subgraph FLOW["4 · Bench-to-decision workflow"]
+        SYN[Evidence synthesis + targets]
+        HYP[Hypotheses]
+        PLAN[Experiment plan + timeline]
+        PROT[Protocol]
+        MATCH[Inventory matcher]
+        ORDER[Order list]
+        PROJ[Project + tasks]
+        STAND[AI stand-up + assignment]
+    end
+    GRAN --> SYN --> HYP --> PLAN
+    PLAN --> PROT --> MATCH --> ORDER
     INV --> MATCH
-    PLAN --> PROJ[Project + tasks]
-    TEAM --> PROJ --> STAND[AI stand-up + assignment]
-    KG --> UI[Web UI / FastAPI]
-    SYN --> UI
-    PLAN --> UI
-    ORDER --> UI
-    STAND --> UI
+    PLAN --> PROJ
+    TEAM --> PROJ --> STAND
+
+    subgraph UI["5 · Interfaces — FastAPI API + static/offline in-browser app"]
+        D1[Discover]
+        D2[Design]
+        D3[Protocol]
+        D4[Papers & Trials]
+        D5[Knowledge graph]
+        D6[Reagent stock]
+        D7[Projects / Team]
+    end
+    SYN --> D1
+    HYP --> D2
+    ORDER --> D3
+    DB --> D4
+    ML --> D5
+    TR --> D5
+    INV --> D6
+    STAND --> D7
 ```
 
 | Module | Technology | Purpose |
