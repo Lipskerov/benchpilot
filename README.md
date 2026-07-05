@@ -40,8 +40,8 @@ I opened BenchPilot and typed one plain question:
 
 ***This is me doing it:***
 
-<img width="220" height="360" alt="IMG_4558" src="https://github.com/user-attachments/assets/df787a54-3548-4006-806b-15353f844561" />
-<img width="220" height="360" alt="IMG_4575" src="https://github.com/user-attachments/assets/3f4bd59e-25a5-498a-8e06-ecc507b9e0f5" />
+<img width="260" height="360" alt="IMG_4558" src="https://github.com/user-attachments/assets/df787a54-3548-4006-806b-15353f844561" />
+<img width="260" height="360" alt="IMG_4575" src="https://github.com/user-attachments/assets/3f4bd59e-25a5-498a-8e06-ecc507b9e0f5" />
 
 **4. Reagents reconciled instantly.** It drafted the protocol and checked it against my lab's live inventory, **flagged that olaparib was out of stock**, and produced an order list. That cross-check is usually an afternoon of tab-switching.
 
