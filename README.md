@@ -39,8 +39,9 @@ I opened BenchPilot and typed one plain question:
 **3. A full experiment plan with a timeline.** In one click it laid out a **5-work-package plan across 9 weeks** — Western blot for PD-L1 expression, IF microscopy, a dose-response assay, a chemo + immunotherapy combination, and analysis — each with the right cell lines (MDA-MB-231/468, MCF-10A control), treatment groups, replicates, and reagents. Two experiments run in parallel, the rest in sequence.
 
 ***This is me doing it:***
-<img width="500" height="1000" alt="IMG_4558" src="https://github.com/user-attachments/assets/df787a54-3548-4006-806b-15353f844561" />
-<img width="500" height="1000" alt="IMG_4575" src="https://github.com/user-attachments/assets/3f4bd59e-25a5-498a-8e06-ecc507b9e0f5" />
+
+<img width="500" height="600" alt="IMG_4558" src="https://github.com/user-attachments/assets/df787a54-3548-4006-806b-15353f844561" />
+<img width="500" height="600" alt="IMG_4575" src="https://github.com/user-attachments/assets/3f4bd59e-25a5-498a-8e06-ecc507b9e0f5" />
 
 **4. Reagents reconciled instantly.** It drafted the protocol and checked it against my lab's live inventory, **flagged that olaparib was out of stock**, and produced an order list. That cross-check is usually an afternoon of tab-switching.
 
