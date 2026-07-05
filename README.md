@@ -1,4 +1,3 @@
-<img width="2316" height="3088" alt="IMG_4558" src="https://github.com/user-attachments/assets/b4bde8bf-9dcc-4306-9739-07594f314102" /># BenchPilot
 
 **An evidence-grounded AI co-worker for the cancer-biology lab — it takes a research idea from question to a staffed, scheduled experimental plan in about an hour instead of weeks.**
 
